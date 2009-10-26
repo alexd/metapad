@@ -1,0 +1,14 @@
+To get metapad built within Dev-C++, take the Makefile that 
+is generated and add the following to the top:
+
+    RICHEDIT = USE_RICH_EDIT
+    #RICHEDIT = NO_RICH_EDIT
+
+Then edit the lines corresponding to those below:
+
+    WINDRES = windres.exe --define $(RICHEDIT)
+    CC   = gcc.exe --define $(RICHEDIT)
+
+This will ensure that config flags are passed properly. Lastly, 
+tell Dev-C++ to use your custom Makefile so it doesn't overwrite 
+the changes.
