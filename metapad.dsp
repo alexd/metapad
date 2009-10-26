@@ -412,7 +412,7 @@ SOURCE=.\linkhand.cur
 # End Source File
 # Begin Source File
 
-SOURCE=.\pad2.ico
+SOURCE=.\metapad.ico
 # End Source File
 # Begin Source File
 

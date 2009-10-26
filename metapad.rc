@@ -661,6 +661,7 @@ BEGIN
             MENUITEM "&UNIX Text (LF)\tCtrl+2",     ID_UNIX_FILE
             MENUITEM "Un&icode\tCtrl+3",            ID_UNICODE_FILE
             MENUITEM "Unicode (&Big Endian)\tCtrl+4", ID_UNICODE_BE_FILE
+            MENUITEM "UTF-&8 w/BOM (CR+LF)\tCtrl+5",        ID_UTF_8_FILE
         END
         MENUITEM "&Refresh/Revert\tF5",         ID_RELOAD_CURRENT
         MENUITEM "&Calculate Size\tF12",        ID_SHOWFILESIZE
@@ -801,7 +802,7 @@ END
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-IDI_PAD                 ICON    DISCARDABLE     "pad2.ico"
+IDI_PAD                 ICON    DISCARDABLE     "metapad.ico"
 IDI_EYE                 ICON    DISCARDABLE     "eye3.ico"
 
 /////////////////////////////////////////////////////////////////////////////
@@ -819,9 +820,9 @@ IDB_DROP_ARROW          BITMAP  DISCARDABLE     "drop_arrow.bmp"
 
 #if defined(APSTUDIO_INVOKED) || defined(USE_RICH_EDIT)
 #if defined(APSTUDIO_INVOKED)
-IDC_HAND$(USE_RICH_EDIT) CURSOR  DISCARDABLE     "linkhand.cur"
+IDC_MYHAND$(USE_RICH_EDIT) CURSOR  DISCARDABLE     "linkhand.cur"
 #else
-IDC_HAND                CURSOR  DISCARDABLE     "linkhand.cur"
+IDC_MYHAND                CURSOR  DISCARDABLE     "linkhand.cur"
 #endif
 #endif
 
@@ -846,7 +847,7 @@ BEGIN
     "4",            ID_UNICODE_BE_FILE,     VIRTKEY, CONTROL, NOINVERT
     "4",            ID_MACRO_4,             VIRTKEY, ALT, NOINVERT
     "4",            ID_SET_MACRO_4,         VIRTKEY, SHIFT, ALT, NOINVERT
-    "5",            IDI_EYE,                VIRTKEY, CONTROL, NOINVERT
+    "5",            ID_UTF_8_FILE,          VIRTKEY, CONTROL, NOINVERT
     "5",            ID_MACRO_5,             VIRTKEY, ALT, NOINVERT
     "5",            ID_SET_MACRO_5,         VIRTKEY, SHIFT, ALT, NOINVERT
     "6",            ID_MACRO_6,             VIRTKEY, ALT, NOINVERT
@@ -942,7 +943,7 @@ BEGIN
     IDS_PLUGIN_LANGUAGE     "English (Plugin Template)"
     IDS_PLUGIN_RELEASE      "1"
     IDS_PLUGIN_TRANSLATOR   "Alex Davidson"
-    IDS_PLUGIN_EMAIL        "metapad@canada.com"
+    IDS_PLUGIN_EMAIL        "metapad-feedback@liquidninja.com"
     IDS_RESERVED2           "-"
     IDS_RESERVED3           "-"
     IDS_DEFAULT_FILTER      "All File Types|*.txt;*.htm;*.html;*.c;*.cpp;*.h;*.java|Text Files (*.txt)|*.txt|HTML (*.html; *.htm)|*.html;*.htm|Source Code (*.c; *.cpp; *.h; *.java)|*.c;*.cpp;*.h;*.java|All Files (*.*)|*.*"
