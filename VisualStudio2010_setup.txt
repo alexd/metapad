@@ -1,0 +1,5 @@
+1) Add comctl32.lib to the linker additional dependencies
+2) C++ preprocessor - undefine UNICODE;_UNICODE for all configs
+3) C++ preprocessor - define NO_RICH_EDIT, USE_RICH_EDIT depending on build config
+4) Resources preprocessor - define NO_RICH_EDIT, USE_RICH_EDIT depending on build config
+ 
