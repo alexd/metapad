@@ -7,7 +7,9 @@
 //
 // Generated from the TEXTINCLUDE 2 resource.
 //
-#include "afxres.h"
+//#include "afxres.h"
+#include <windows.h>
+#define IDC_STATIC (-1) 
 
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
@@ -26,7 +28,7 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 // 24
 //
 
-1                       24      MOVEABLE PURE   "metapad.manifest"
+//1                       24      MOVEABLE PURE   "metapad.manifest"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -63,7 +65,7 @@ IDD_PROPPAGE_A1_LE$(NO_RICH_EDIT) DIALOGEX 0, 0, 225, 167
 IDD_PROPPAGE_A1_LE DIALOGEX 0, 0, 225, 167
 #endif
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "Advanced 1"
+CAPTION "Advanced"
 FONT 8, "MS Sans Serif", 0, 0, 0x1
 BEGIN
     CONTROL         "&Separate recent files menu",IDC_RECENT,"Button",
@@ -98,8 +100,7 @@ BEGIN
                     BS_AUTOCHECKBOX | WS_TABSTOP,119,84,99,8
     CONTROL         "D&on't auto-select on find",IDC_NO_FIND_SELECT,"Button",
                     BS_AUTOCHECKBOX | WS_TABSTOP,119,97,99,8
-    PUSHBUTTON      "Sa&ve Window Position",IDC_BUTTON_STICK,119,111,99,13,
-                    WS_GROUP,WS_EX_STATICEDGE
+    PUSHBUTTON      "Sa&ve Window Position",IDC_BUTTON_STICK,119,111,99,13
     PUSHBUTTON      "Clear &Recent Files...",IDC_BUTTON_CLEAR_RECENT,7,127,
                     83,14
     PUSHBUTTON      "Clear &Find History...",IDC_BUTTON_CLEAR_FIND,7,146,83,
@@ -276,23 +277,20 @@ BEGIN
                     BS_AUTORADIOBUTTON | WS_GROUP,16,19,77,10
     CONTROL         "&Custom:",IDC_FONT_PRIMARY_2,"Button",
                     BS_AUTORADIOBUTTON,16,30,77,10
-    PUSHBUTTON      "Font &1",IDC_BTN_FONT1,16,42,83,14,WS_GROUP,
-                    WS_EX_CLIENTEDGE
+    PUSHBUTTON      "Font &1",IDC_BTN_FONT1,16,42,83,14
     CONTROL         "&Use system colours",IDC_SYSTEM_COLOURS,"Button",
                     BS_AUTOCHECKBOX | BS_NOTIFY | WS_TABSTOP,16,62,76,9
     LTEXT           "Window colour:",IDC_STAT_WIND,16,76,50,9
     CONTROL         "window",IDC_COLOUR_BACK,"Button",BS_OWNERDRAW,74,75,25,
                     11,WS_EX_STATICEDGE
     LTEXT           "Font colour:",IDC_STAT_FONT,16,92,45,9
-    CONTROL         "font",IDC_COLOUR_FONT,"Button",BS_OWNERDRAW,74,91,26,11,
-                    WS_EX_STATICEDGE
+    CONTROL         "font",IDC_COLOUR_FONT,"Button",BS_OWNERDRAW,74,91,26,11                    
     GROUPBOX        "Secondary font",IDC_STATIC,117,7,101,102,WS_GROUP
     CONTROL         "ANSI fi&xed width",IDC_FONT_SECONDARY,"Button",
                     BS_AUTORADIOBUTTON | WS_GROUP,126,19,75,10
     CONTROL         "Cust&om:",IDC_FONT_SECONDARY_2,"Button",
                     BS_AUTORADIOBUTTON,126,30,75,10
-    PUSHBUTTON      "Font &2",IDC_BTN_FONT2,126,42,83,14,WS_GROUP,
-                    WS_EX_CLIENTEDGE
+    PUSHBUTTON      "Font &2",IDC_BTN_FONT2,126,42,83,14
     CONTROL         "Us&e system colours",IDC_SYSTEM_COLOURS2,"Button",
                     BS_AUTOCHECKBOX | BS_NOTIFY | WS_TABSTOP,126,62,76,9
     LTEXT           "Window colour:",IDC_STAT_WIND2,126,76,50,9
@@ -300,16 +298,16 @@ BEGIN
                     26,11,WS_EX_STATICEDGE
     LTEXT           "Font colour:",IDC_STAT_FONT2,126,92,45,9
     CONTROL         "font",IDC_COLOUR_FONT2,"Button",BS_OWNERDRAW,183,91,26,
-                    11,WS_EX_STATICEDGE
+                    11
     GROUPBOX        "Window",IDC_STATIC,7,113,211,47
     LTEXT           "&Selection margin width:",IDC_STATIC,15,124,52,15
     EDITTEXT        IDC_EDIT_SM_WIDTH,79,126,24,12,ES_CENTER | 
                     ES_AUTOHSCROLL
-    LTEXT           "&Transparency %: (Win2K or later)",IDC_STAT_TRANS,120,
+    LTEXT           "&Transparency %:",IDC_STAT_TRANS,120,
                     124,58,16
     EDITTEXT        IDC_EDIT_TRANSPARENT,184,126,24,12,ES_CENTER | 
                     ES_AUTOHSCROLL
-    CONTROL         "Use cl&assic toolbar (preferable in WinXP)",
+    CONTROL         "Use cl&assic toolbar",
                     IDC_FLAT_TOOLBAR,"Button",BS_AUTOCHECKBOX | BS_MULTILINE | 
                     WS_TABSTOP,16,145,176,9
 END
@@ -321,7 +319,7 @@ IDD_PROPPAGE_A1$(USE_RICH_EDIT) DIALOGEX 0, 0, 225, 167
 IDD_PROPPAGE_A1 DIALOGEX 0, 0, 225, 167
 #endif
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "Advanced 1"
+CAPTION "Advanced"
 FONT 8, "MS Sans Serif", 0, 0, 0x1
 BEGIN
     CONTROL         "&Separate recent files menu",IDC_RECENT,"Button",
@@ -358,8 +356,7 @@ BEGIN
                     BS_AUTOCHECKBOX | WS_TABSTOP,119,84,99,8
     CONTROL         "D&on't auto-select on find",IDC_NO_FIND_SELECT,"Button",
                     BS_AUTOCHECKBOX | WS_TABSTOP,119,97,99,8
-    PUSHBUTTON      "Sa&ve Window Position",IDC_BUTTON_STICK,119,111,99,13,
-                    WS_GROUP,WS_EX_STATICEDGE
+    PUSHBUTTON      "Sa&ve Window Position",IDC_BUTTON_STICK,119,111,99,13
     PUSHBUTTON      "Clear &Recent Files...",IDC_BUTTON_CLEAR_RECENT,7,127,
                     83,14
     PUSHBUTTON      "Clear &Find History...",IDC_BUTTON_CLEAR_FIND,7,146,83,
@@ -375,10 +372,10 @@ END
 
 IDD_PROPPAGE_A2 DIALOG DISCARDABLE  0, 0, 225, 167
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "Advanced 2"
+CAPTION "Buffers && Language"
 FONT 8, "MS Sans Serif"
 BEGIN
-    GROUPBOX        "Quick buffers (settable with Alt + Shift + number)",
+    GROUPBOX        "Quick buffers (select text and set with Alt + Shift + number)",
                     IDC_STATIC,7,7,211,102
     LTEXT           "Alt + &1:",IDC_STATIC,17,22,25,8
     EDITTEXT        IDC_MACRO_1,48,20,59,12,ES_AUTOHSCROLL
@@ -400,7 +397,7 @@ BEGIN
     EDITTEXT        IDC_MACRO_9,150,71,59,12,ES_AUTOHSCROLL
     LTEXT           "Alt + &0:",IDC_STATIC,118,90,28,8
     EDITTEXT        IDC_MACRO_10,150,88,59,12,ES_AUTOHSCROLL
-    GROUPBOX        "Language",IDC_STATIC,7,113,211,47
+    GROUPBOX        "Language for menus, dialogs and messages",IDC_STATIC,7,113,211,47
     CONTROL         "&Default (English)",IDC_RADIO_LANG_DEFAULT,"Button",
                     BS_AUTORADIOBUTTON | BS_NOTIFY | WS_GROUP,17,128,72,10
     CONTROL         "&Language plugin:",IDC_RADIO_LANG_PLUGIN,"Button",

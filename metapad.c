@@ -2,7 +2,7 @@
 /*                                                                          */
 /*   metapad 3.6                                                            */
 /*                                                                          */
-/*   Copyright (C) 1999-2009 Alexander Davidson                             */
+/*   Copyright (C) 1999-2010 Alexander Davidson                             */
 /*                                                                          */
 /*   This program is free software: you can redistribute it and/or modify   */
 /*   it under the terms of the GNU General Public License as published by   */
@@ -22,7 +22,7 @@
 #define WIN32_LEAN_AND_MEAN
 #define _WIN32_WINNT 0x0400
 
-#ifdef UNICODE
+#ifdef BUILD_METAPAD_UNICODE
 #define _UNICODE
 #include <wchar.h>
 #endif
@@ -128,17 +128,17 @@ extern atoi(const char*);
 
 ///// Strings /////
 
-#ifdef UNICODE
+#ifdef BUILD_METAPAD_UNICODE
 #ifdef USE_RICH_EDIT
-#define STR_ABOUT_NORMAL _T("metapad 3.6u ALPHA 0")
+#define STR_ABOUT_NORMAL _T("metapad 3.xU ALPHA 0")
 #else
-#define STR_ABOUT_NORMAL _T("metapad 3.6u LE ALPHA 0")
+#define STR_ABOUT_NORMAL _T("metapad LE 3.xU ALPHA 0")
 #endif
 #else
 #ifdef USE_RICH_EDIT
-#define STR_ABOUT_NORMAL _T("metapad 3.6 Alpha 1")
+#define STR_ABOUT_NORMAL _T("metapad 3.6 b1")
 #else
-#define STR_ABOUT_NORMAL _T("metapad 3.6 LE Alpha 1")
+#define STR_ABOUT_NORMAL _T("metapad LE 3.6 b1")
 #endif
 #endif
 
@@ -151,10 +151,10 @@ extern atoi(const char*);
 #define STR_METAPAD _T("metapad")
 #define STR_FAV_FILE _T("metafav.ini")
 #define STR_CAPTION_FILE _T("%s - metapad")
-#define STR_URL _T("http://liquidninja.com/metapad/")
+#define STR_URL _T("http://liquidninja.com/metapad")
 #define STR_REGKEY _T("SOFTWARE\\metapad")
 #define STR_FAV_APPNAME _T("Favourites")
-#define STR_COPYRIGHT _T("© 1999-2009 Alexander Davidson")
+#define STR_COPYRIGHT _T("© 1999-2010 Alexander Davidson")
 
 ///// Macros /////
 
@@ -522,6 +522,7 @@ BOOL IsBOM(PBYTE pb, int bomType)
 		else
 			return FALSE;
 	}
+	return FALSE;
 }
 
 void ReverseBytes(PBYTE buffer, LONG size)
@@ -2086,7 +2087,8 @@ void LoadOptions(void)
 	options.nTabStops = 8;
 	options.rMargins.top = options.rMargins.bottom = options.rMargins.left = options.rMargins.right = 500;
 	options.nLaunchSave = options.nPrimaryFont = options.nSecondaryFont = 0;
-	options.bNoCaptionDir = options.bAutoIndent = options.bInsertSpaces = options.bFindAutoWrap = options.bSaveWindowPlacement = options.bLaunchClose = options.bQuickExit = FALSE;
+	options.bNoCaptionDir = options.bFindAutoWrap = options.bSaveWindowPlacement = options.bLaunchClose = options.bQuickExit = TRUE;
+	options.bAutoIndent = options.bInsertSpaces = FALSE;
 	options.bSystemColours = TRUE;
 	options.bSystemColours2 = TRUE;
 	options.bSaveMenuSettings = TRUE;
@@ -2113,7 +2115,7 @@ void LoadOptions(void)
 	options.bRecentOnOwn = FALSE;
 	options.bDontInsertTime = FALSE;
 	options.bNoWarningPrompt = FALSE;
-	options.bUnFlatToolbar = FALSE;
+	options.bUnFlatToolbar = TRUE;
 	options.bStickyWindow = FALSE;
 	options.bReadOnlyMenu = FALSE;
 	//options.nStatusFontWidth = 16;
@@ -2183,7 +2185,7 @@ void LoadOptions(void)
 		RegQueryValueEx(key, _T("nPrimaryFont"), NULL, NULL, (LPBYTE)&options.nPrimaryFont, &dwBufferSize);
 		RegQueryValueEx(key, _T("nSecondaryFont"), NULL, NULL, (LPBYTE)&options.nSecondaryFont, &dwBufferSize);
 		dwBufferSize = sizeof(LOGFONT);
-#ifdef UNICODE
+#ifdef BUILD_METAPAD_UNICODE
 		RegQueryValueEx(key, _T("PrimaryFont_U"), NULL, NULL, (LPBYTE)&options.PrimaryFont, &dwBufferSize);
 		RegQueryValueEx(key, _T("SecondaryFont_U"), NULL, NULL, (LPBYTE)&options.SecondaryFont, &dwBufferSize);
 #else
@@ -2275,7 +2277,7 @@ void SaveOptions(void)
 	RegSetValueEx(key, _T("nTabStops"), 0, REG_DWORD, (LPBYTE)&options.nTabStops, sizeof(int));
 	RegSetValueEx(key, _T("nPrimaryFont"), 0, REG_DWORD, (LPBYTE)&options.nPrimaryFont, sizeof(int));
 	RegSetValueEx(key, _T("nSecondaryFont"), 0, REG_DWORD, (LPBYTE)&options.nSecondaryFont, sizeof(int));
-#ifdef UNICODE
+#ifdef BUILD_METAPAD_UNICODE
 	RegSetValueEx(key, _T("PrimaryFont_U"), 0, REG_BINARY, (LPBYTE)&options.PrimaryFont, sizeof(LOGFONT));
 	RegSetValueEx(key, _T("SecondaryFont_U"), 0, REG_BINARY, (LPBYTE)&options.SecondaryFont, sizeof(LOGFONT));
 #else
@@ -2371,7 +2373,7 @@ void LoadMenusAndData(void)
 		RegQueryValueEx(key, _T("FileFilter"), NULL, NULL, (LPBYTE)&szCustomFilter, &dwBufferSize);
 		
 		if (!options.bNoSaveHistory) {
-#ifdef UNICODE
+#ifdef BUILD_METAPAD_UNICODE
 			dwBufferSize = sizeof(TCHAR) * NUMFINDS * MAXFIND;
 			RegQueryValueEx(key, _T("FindArray_U"), NULL, NULL, (LPBYTE)&FindArray, &dwBufferSize);
 			RegQueryValueEx(key, _T("ReplaceArray_U"), NULL, NULL, (LPBYTE)&ReplaceArray, &dwBufferSize);
@@ -2452,7 +2454,7 @@ void SaveMenusAndData(void)
 	}
 	
 	if (!options.bNoSaveHistory) {
-#ifdef UNICODE
+#ifdef BUILD_METAPAD_UNICODE
 		RegSetValueEx(key, _T("FindArray_U"), 0, REG_BINARY, (LPBYTE)&FindArray, sizeof(TCHAR) * NUMFINDS * MAXFIND);
 		RegSetValueEx(key, _T("ReplaceArray_U"), 0, REG_BINARY, (LPBYTE)&ReplaceArray, sizeof(TCHAR) * NUMFINDS * MAXFIND);
 #else
@@ -3005,7 +3007,7 @@ DWORD LoadFileIntoBuffer(HANDLE hFile, PBYTE* ppBuffer, ULONG* plBufferLength, I
 	}
 
 	if (*pnFileEncoding == TYPE_UTF_16 || *pnFileEncoding == TYPE_UTF_16_BE && *plBufferLength) {
-#ifndef UNICODE
+#ifndef BUILD_METAPAD_UNICODE
 		long nBytesNeeded;
 		BOOL bUsedDefault;
 		PBYTE pNewBuffer = NULL;
@@ -3015,7 +3017,7 @@ DWORD LoadFileIntoBuffer(HANDLE hFile, PBYTE* ppBuffer, ULONG* plBufferLength, I
 		}
 		*plBufferLength = *plBufferLength / 2;
 
-#ifndef UNICODE
+#ifndef BUILD_METAPAD_UNICODE
 		nBytesNeeded = WideCharToMultiByte(CP_ACP, 0, (LPCWSTR)*ppBuffer, 
 			*plBufferLength, NULL, 0, NULL, NULL);
 
@@ -3230,7 +3232,7 @@ void LoadFile(LPTSTR szFilename, BOOL bCreate, BOOL bMRU)
 		SendMessage(client, EM_SCROLLCARET, 0, 0);
 	}
 
-//#ifndef UNICODE
+//#ifndef BUILD_METAPAD_UNICODE
 //fini:
 //#endif
 	bHideMessage = TRUE;
@@ -3335,7 +3337,7 @@ BOOL SaveFile(LPCTSTR szFilename)
 			RichModeToDos(&szBuffer);
 #endif
 
-#ifdef UNICODE
+#ifdef BUILD_METAPAD_UNICODE
 			pNewBuffer = szBuffer;
 #else
 			nBytesNeeded = 2 * (1+MultiByteToWideChar(CP_ACP, 0, (LPCSTR)szBuffer, 
@@ -3370,7 +3372,7 @@ BOOL SaveFile(LPCTSTR szFilename)
 				ReportLastError();
 			}
 			lFileSize = nBytesNeeded-2;
-#ifndef UNICODE
+#ifndef BUILD_METAPAD_UNICODE
 			GlobalFree((HGLOBAL)pNewBuffer);
 #endif
 		}
@@ -4439,7 +4441,6 @@ BOOL CALLBACK ViewPageProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 				EnableWindow(GetDlgItem(hwndDlg, IDC_EDIT_TRANSPARENT), FALSE);
 			}
 
-			SendDlgItemMessage(hwndDlg, IDC_FLAT_TOOLBAR, BM_SETCHECK, (WPARAM) options.bUnFlatToolbar, 0);
 			SendDlgItemMessage(hwndDlg, IDC_SYSTEM_COLOURS, BM_SETCHECK, (WPARAM) options.bSystemColours, 0);
 			SendDlgItemMessage(hwndDlg, IDC_SYSTEM_COLOURS2, BM_SETCHECK, (WPARAM) options.bSystemColours2, 0);
 			SendMessage(hwndDlg, WM_COMMAND, MAKEWPARAM(IDC_SYSTEM_COLOURS, 0), 0);
@@ -4524,8 +4525,6 @@ BOOL CALLBACK ViewPageProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 					options.bSystemColours2 = TRUE;
 				else
 					options.bSystemColours2 = FALSE;
-
-				options.bUnFlatToolbar = (BST_CHECKED == SendDlgItemMessage(hwndDlg, IDC_FLAT_TOOLBAR, BM_GETCHECK, 0, 0));
 
 				options.PrimaryFont = TmpPrimaryFont;
 				options.SecondaryFont = TmpSecondaryFont;
@@ -5777,7 +5776,7 @@ LONG WINAPI MainWndProc(HWND hwndMain, UINT Msg, WPARAM wParam, LPARAM lParam)
 					}
 
 					dwActualBytesRead = LoadFileIntoBuffer(hFile, &pBuffer, &lBufferLength, &nFileEncoding);
-#ifndef UNICODE
+#ifndef BUILD_METAPAD_UNICODE
 					if (memchr((const void*)pBuffer, '\0', lBufferLength) != NULL) {
 						if (options.bNoWarningPrompt || MessageBox(hwnd, GetString(IDS_BINARY_FILE_WARNING), STR_METAPAD, MB_ICONQUESTION|MB_YESNO) == IDYES) {
 							UINT i;
@@ -5907,12 +5906,8 @@ endinsertfile:
 
 					pages[2].hInstance = hinstLang;
 					pages[2].dwFlags = PSP_DEFAULT;
-#ifdef USE_RICH_EDIT
-					pages[2].pszTemplate = MAKEINTRESOURCE(IDD_PROPPAGE_A1);
-#else
-					pages[2].pszTemplate = MAKEINTRESOURCE(IDD_PROPPAGE_A1_LE);
-#endif
-					pages[2].pfnDlgProc = (DLGPROC)AdvancedPageProc;
+					pages[2].pszTemplate = MAKEINTRESOURCE(IDD_PROPPAGE_A2);
+					pages[2].pfnDlgProc = (DLGPROC)Advanced2PageProc;
 
 					ZeroMemory(&pages[3], sizeof(pages[3]));
 					pages[3].dwSize = sizeof(PROPSHEETPAGE);
@@ -5920,8 +5915,12 @@ endinsertfile:
 
 					pages[3].hInstance = hinstLang;
 					pages[3].dwFlags = PSP_DEFAULT;
-					pages[3].pszTemplate = MAKEINTRESOURCE(IDD_PROPPAGE_A2);
-					pages[3].pfnDlgProc = (DLGPROC)Advanced2PageProc;
+#ifdef USE_RICH_EDIT
+					pages[3].pszTemplate = MAKEINTRESOURCE(IDD_PROPPAGE_A1);
+#else
+					pages[3].pszTemplate = MAKEINTRESOURCE(IDD_PROPPAGE_A1_LE);
+#endif
+					pages[3].pfnDlgProc = (DLGPROC)AdvancedPageProc;
 
 					ZeroMemory(&psh, sizeof(psh));
 					psh.dwSize = sizeof(PROPSHEETHEADER);
@@ -6718,14 +6717,14 @@ endinsertfile:
 					}
 					break;
 				case ID_MAKE_OEM:
-#ifdef UNICODE
+#ifdef BUILD_METAPAD_UNICODE
 					ERROROUT(_T("Not supported in UNICODE version."));
 #else
 					CharToOemBuff(szSrc, szDest, nSize);
 #endif
 					break;
 				case ID_MAKE_ANSI:
-#ifdef UNICODE
+#ifdef BUILD_METAPAD_UNICODE
 					ERROROUT(_T("Not supported in UNICODE version."));
 #else
 					OemToCharBuff(szSrc, szDest, nSize);
@@ -7330,7 +7329,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	hinstThis = hInstance;
 
-#ifdef UNICODE
+#ifdef BUILD_METAPAD_UNICODE
 	szCmdLine = GetCommandLine();
 	szCmdLine = _tcschr(szCmdLine, _T(' ')) + 1;
 #else

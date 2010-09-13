@@ -2,6 +2,7 @@
 // Microsoft Developer Studio generated include file.
 // Used by metapad.rc
 //
+
 #define IDS_VERSION_SYNCH               1
 #define IDS_PLUGIN_LANGUAGE             2
 #define IDS_PLUGIN_RELEASE              3
