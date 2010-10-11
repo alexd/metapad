@@ -307,7 +307,7 @@ BEGIN
                     124,58,16
     EDITTEXT        IDC_EDIT_TRANSPARENT,184,126,24,12,ES_CENTER | 
                     ES_AUTOHSCROLL
-    CONTROL         "Use cl&assic toolbar",
+    CONTROL         "Use cl&assic toolbar style",
                     IDC_FLAT_TOOLBAR,"Button",BS_AUTOCHECKBOX | BS_MULTILINE | 
                     WS_TABSTOP,16,145,176,9
 END

@@ -1,0 +1,45 @@
+#Project: metapad
+#Compiler: Default GCC compiler
+#Compiler Type: MingW 3
+#Makefile created by wxDev-C++ 7.2.0.2 on 29-11-09 05:10
+
+RICHEDIT = USE_RICH_EDIT
+#RICHEDIT = NO_RICH_EDIT
+
+WXLIBNAME = wxmsw28
+CC        = gcc.exe --define $(RICHEDIT)
+WINDRES   = "windres.exe" --define $(RICHEDIT)
+OBJ       = Objects/MingW/metapad.o Objects/MingW/metapad_private.res
+LINKOBJ   = "Objects/MingW/metapad.o" Objects/MingW/metapad_private.res
+LIBS      = -lcomctl32 -lkernel32 -luser32 -lgdi32 -lcomdlg32 -ladvapi32 -lshell32 -mwindows
+INCS      = 
+CXXINCS   = 
+RCINCS    = 
+BIN       = Output/MingW/metapad.exe
+
+#DEFINES   = -D__GNUWIN32__ -D_DEBUG -D_MBCS -DWIN32 -D_WINDOWS
+DEFINES   = -D__GNUWIN32__  -DNDEBUG -D_MBCS -DWIN32 -D_WINDOWS
+
+#CFLAGS    = $(INCS) $(DEFINES) -W /Od /FD -c  
+#CFLAGS    = $(INCS) $(DEFINES)  -c
+CFLAGS    = $(INCS) $(DEFINES)  -c -O2
+
+GPROF     = gprof.exe
+RM        = rm -f
+LINK      = g++.exe
+
+.PHONY: all all-before all-after clean clean-custom
+all: all-before $(BIN) all-after
+
+clean: clean-custom
+	$(RM) $(LINKOBJ) "$(BIN)"
+
+$(BIN): $(OBJ)
+	$(LINK) $(LINKOBJ) -o "$(BIN)" $(LIBS)
+	strip $(BIN) 
+
+Objects/MingW/metapad.o: $(GLOBALDEPS) metapad.c resource.h
+	$(CC) -c metapad.c -o Objects/MingW/metapad.o $(CFLAGS)
+
+Objects/MingW/metapad_private.res: Objects/MingW/metapad_private.rc metapad.rc 
+	$(WINDRES) --input-format=rc -o Objects/MingW/metapad_private.res $(RCINCS) Objects/MingW/METAPA~1.RC -O coff

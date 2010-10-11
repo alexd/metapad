@@ -25,6 +25,9 @@
 #ifdef BUILD_METAPAD_UNICODE
 #define _UNICODE
 #include <wchar.h>
+#else
+#undef _UNICODE
+#undef UNICODE
 #endif
 
 //#define STREAMING
@@ -4441,6 +4444,7 @@ BOOL CALLBACK ViewPageProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 				EnableWindow(GetDlgItem(hwndDlg, IDC_EDIT_TRANSPARENT), FALSE);
 			}
 
+			SendDlgItemMessage(hwndDlg, IDC_FLAT_TOOLBAR, BM_SETCHECK, (WPARAM) options.bUnFlatToolbar, 0);
 			SendDlgItemMessage(hwndDlg, IDC_SYSTEM_COLOURS, BM_SETCHECK, (WPARAM) options.bSystemColours, 0);
 			SendDlgItemMessage(hwndDlg, IDC_SYSTEM_COLOURS2, BM_SETCHECK, (WPARAM) options.bSystemColours2, 0);
 			SendMessage(hwndDlg, WM_COMMAND, MAKEWPARAM(IDC_SYSTEM_COLOURS, 0), 0);
@@ -4526,6 +4530,7 @@ BOOL CALLBACK ViewPageProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 				else
 					options.bSystemColours2 = FALSE;
 
+				options.bUnFlatToolbar = (BST_CHECKED == SendDlgItemMessage(hwndDlg, IDC_FLAT_TOOLBAR, BM_GETCHECK, 0, 0));
 				options.PrimaryFont = TmpPrimaryFont;
 				options.SecondaryFont = TmpSecondaryFont;
 				options.BackColour = TmpBackColour;
@@ -6406,7 +6411,7 @@ endinsertfile:
 					psd.rtMargin = options.rMargins;
 					psd.lpPageSetupTemplateName = MAKEINTRESOURCE(IDD_PAGE_SETUP);
 					
-					if (!GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_IMEASURE, &szLocale, sizeof(szLocale))) {
+					if (!GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_IMEASURE, (LPTSTR)&szLocale, sizeof(szLocale))) {
 						ReportLastError();
 					}
 					bMetric = (lstrcmp(szLocale, _T("0")) == 0);
