@@ -2,4 +2,9 @@
 2) C++ preprocessor - undefine UNICODE;_UNICODE for all configs
 3) C++ preprocessor - define NO_RICH_EDIT, USE_RICH_EDIT depending on build config
 4) Resources preprocessor - define NO_RICH_EDIT, USE_RICH_EDIT depending on build config
- 
+
+Release builds (ensure linking dynamically with OS copy of msvcrt.dll):
+
+5) Install the Windows DDK
+6) Add DDK lib to front of Library Directories (e.g., C:\WinDDK\7600.16385.1\lib\Crt\i386;)
+7) Disable _ftol2_sse by adding "/QIfist" to Additional Options under C/C++ Command Line

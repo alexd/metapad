@@ -84,6 +84,7 @@ int __cdecl tolower(int c)
 		return c - 'A' + 'a';
 }
 */
+/*
 char* __cdecl strchr(const char* str, int ch)
 {
 	while (*str != '\0') {
@@ -108,3 +109,4 @@ char* __cdecl strrchr(const char* str, int ch)
 	}
 	return NULL;
 }
+*/
