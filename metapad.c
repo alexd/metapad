@@ -51,7 +51,7 @@
 #include "resource.h"
 
 #if defined(__MINGW32__)
-#define PROPSHEETHEADER_V1_SIZE 40
+ #define PROPSHEETHEADER_V1_SIZE 40
 #else
  #include "w32crt.h"
 #endif
@@ -1566,7 +1566,11 @@ int FixShortFilename(TCHAR *szSrc, TCHAR *szDest)
 			}
 		}
 	
+		#ifndef __MINGW32__
 		_tcsncpy_s(sDir, sizeof(szDest), szDest, nDestPos);
+		#else
+		_tcsncpy(sDir, szDest, nDestPos);		
+		#endif
 		sDir[nDestPos] = '*';
 		sDir[nDestPos + 1] = '\0';
 
@@ -1579,10 +1583,17 @@ int FixShortFilename(TCHAR *szSrc, TCHAR *szDest)
 		while (bOK && lstrcmpi(FindFileData.cFileName, sName) != 0 && lstrcmpi(FindFileData.cAlternateFileName, sName) != 0)
 			bOK = FindNextFile(hHandle, &FindFileData);
 
-		if (bOK)
-			_tcscpy_s(&szDest[nDestPos], sizeof(FindFileData.cFileName), FindFileData.cFileName);
-		else
-			_tcscpy_s(&szDest[nDestPos], sizeof(sName), sName);
+        #ifndef __MINGW32__
+    		if (bOK)
+    			_tcscpy_s(&szDest[nDestPos], sizeof(FindFileData.cFileName), FindFileData.cFileName);
+    		else
+    			_tcscpy_s(&szDest[nDestPos], sizeof(sName), sName);
+		#else
+    		if (bOK)
+    			_tcscpy(&szDest[nDestPos], FindFileData.cFileName);
+    		else
+    			_tcscpy(&szDest[nDestPos], sName);
+		#endif
 
 		// Fix the length of szDest
 		nDestPos = _tcslen(szDest);
