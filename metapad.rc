@@ -300,16 +300,16 @@ BEGIN
     CONTROL         "font",IDC_COLOUR_FONT2,"Button",BS_OWNERDRAW,183,91,26,
                     11
     GROUPBOX        "Window",IDC_STATIC,7,113,211,47
-    LTEXT           "&Selection margin width:",IDC_STATIC,15,124,52,15
-    EDITTEXT        IDC_EDIT_SM_WIDTH,79,126,24,12,ES_CENTER | 
+    LTEXT           "&Selection margin width:",IDC_STATIC,15,128,82,16
+    EDITTEXT        IDC_EDIT_SM_WIDTH,94,127,24,12,ES_CENTER | 
                     ES_AUTOHSCROLL
-    LTEXT           "&Transparency %:",IDC_STAT_TRANS,120,
-                    124,58,16
-    EDITTEXT        IDC_EDIT_TRANSPARENT,184,126,24,12,ES_CENTER | 
+    LTEXT           "&Transparency %:",IDC_STAT_TRANS,129,
+                    128,58,16
+    EDITTEXT        IDC_EDIT_TRANSPARENT,185,127,24,12,ES_CENTER | 
                     ES_AUTOHSCROLL
     CONTROL         "Use def&ault toolbar style",
                     IDC_FLAT_TOOLBAR,"Button",BS_AUTOCHECKBOX | BS_MULTILINE | 
-                    WS_TABSTOP,16,145,176,9
+                    WS_TABSTOP,16,143,176,9
 END
 
 #if defined(APSTUDIO_INVOKED) || defined(USE_RICH_EDIT)

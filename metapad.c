@@ -139,9 +139,9 @@ extern atoi(const char*);
 #endif
 #else
 #ifdef USE_RICH_EDIT
-#define STR_ABOUT_NORMAL _T("metapad 3.6 b1")
+#define STR_ABOUT_NORMAL _T("metapad 3.6 beta 1")
 #else
-#define STR_ABOUT_NORMAL _T("metapad LE 3.6 b1")
+#define STR_ABOUT_NORMAL _T("metapad LE 3.6 beta 1")
 #endif
 #endif
 
@@ -1566,7 +1566,7 @@ int FixShortFilename(TCHAR *szSrc, TCHAR *szDest)
 			}
 		}
 	
-		_tcsncpy(sDir, szDest, nDestPos);
+		_tcsncpy_s(sDir, sizeof(szDest), szDest, nDestPos);
 		sDir[nDestPos] = '*';
 		sDir[nDestPos + 1] = '\0';
 
@@ -1580,9 +1580,9 @@ int FixShortFilename(TCHAR *szSrc, TCHAR *szDest)
 			bOK = FindNextFile(hHandle, &FindFileData);
 
 		if (bOK)
-			_tcscpy(&szDest[nDestPos], FindFileData.cFileName);
+			_tcscpy_s(&szDest[nDestPos], sizeof(FindFileData.cFileName), FindFileData.cFileName);
 		else
-			_tcscpy(&szDest[nDestPos], sName);
+			_tcscpy_s(&szDest[nDestPos], sizeof(sName), sName);
 
 		// Fix the length of szDest
 		nDestPos = _tcslen(szDest);
