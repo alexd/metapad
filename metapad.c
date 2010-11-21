@@ -56,6 +56,8 @@
  #include "w32crt.h"
 #endif
 
+#include "cencode.h"
+#include "cdecode.h"
 
 extern atol(const char*);
 extern atoi(const char*);
@@ -75,7 +77,7 @@ extern atoi(const char*);
 #define MAXFAVESIZE 2000
 #define MAXSTRING 500
 //#define MAXFAVES 16
-#define MAXMACRO 1000
+#define MAXMACRO 1001
 
 #define NUMCUSTOMBITMAPS 6
 #ifdef USE_RICH_EDIT
@@ -210,6 +212,7 @@ WNDPROC wpOrigEditProc;
 WNDPROC wpOrigFindProc;
 TCHAR szCaptionFile[MAXFN], szFile[MAXFN];
 TCHAR szFav[MAXFN];
+TCHAR szMetapadIni[MAXFN];
 TCHAR szDir[MAXFN];
 TCHAR szFindText[MAXFIND];
 TCHAR szReplaceText[MAXFIND];
@@ -323,6 +326,9 @@ void PrintContents(void);
 void ReportLastError(void);
 void LaunchPrimaryExternalViewer(void);
 void LaunchSecondaryExternalViewer(void);
+void LoadOptionString(HKEY hKey, LPCSTR name, BYTE* lpData, DWORD cbData);
+void LoadOptionNumeric(HKEY hKey, LPCSTR name, BYTE* lpData, DWORD cbData);
+void LoadOptionBinary(HKEY hKey, LPCSTR name, BYTE* lpData, DWORD cbData);
 void LoadOptions(void);
 void SaveOptions(void);
 void LoadWindowPlacement(int* left, int* top, int* width, int* height, int* nShow);
@@ -348,6 +354,7 @@ LRESULT APIENTRY EditProc(HWND hwndEdit, UINT uMsg, WPARAM wParam, LPARAM lParam
 void PopulateMRUList(void);
 void SaveMRUInfo(LPCTSTR szFullPath);
 void SwitchReadOnly(BOOL bNewVal);
+BOOL EncodeWithEscapeSeqs(TCHAR* szText);
 
 ///// Implementation /////
 
@@ -421,6 +428,40 @@ void FindAndLoadLanguagePlugin(void)
 
 badplugin:
 	ERROROUT(_T("Temporarily reverting language to Default (English)\n\nCheck the language plugin setting."));
+}
+
+BOOL EncodeWithEscapeSeqs(TCHAR* szText)
+{
+	TCHAR szStore[MAXMACRO];
+	INT i,j;
+	BOOL bSlashFound = FALSE;
+
+	for (i = 0, j = 0; szText[i] && i < MAXMACRO; ++i) {
+		switch (szText[i]) {
+		case '\n':
+			break;
+		case '\r':
+			szStore[j++] = '\\';
+			szStore[j++] = 'n';
+			break;
+		case '\t':
+			szStore[j++] = '\\';
+			szStore[j++] = 't';
+			break;
+		case '\\':
+			szStore[j++] = '\\';
+			szStore[j++] = '\\';
+			break;
+		default:
+			szStore[j++] = szText[i];
+		}
+		if (j >= MAXMACRO - 1) { 
+			return FALSE; 
+		}
+	}
+	szStore[j] = '\0';
+	lstrcpy(szText, szStore);
+	return TRUE;
 }
 
 void ParseForEscapeSeqs(TCHAR* szText)
@@ -608,6 +649,9 @@ void LoadFileFromMenu(WORD wMenu, BOOL bMRU)
 		return;
 
 	if (bMRU) {
+
+		//TODOini
+
 		if (RegCreateKeyEx(HKEY_CURRENT_USER, STR_REGKEY, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, NULL) != ERROR_SUCCESS) {
 			ReportLastError();
 			return;
@@ -1567,7 +1611,7 @@ int FixShortFilename(TCHAR *szSrc, TCHAR *szDest)
 		}
 	
 		#ifndef __MINGW32__
-		_tcsncpy_s(sDir, sizeof(szDest), szDest, nDestPos);
+		_tcsncpy_s(sDir, MAXFN, szDest, nDestPos);
 		#else
 		_tcsncpy(sDir, szDest, nDestPos);		
 		#endif
@@ -2096,7 +2140,7 @@ void LaunchInViewer(BOOL bCustom, BOOL bSecondary)
 
 void LoadOptions(void)
 {
-	HKEY key;
+	HKEY key = NULL;
 
 	options.nTabStops = 8;
 	options.rMargins.top = options.rMargins.bottom = options.rMargins.left = options.rMargins.right = 500;
@@ -2151,86 +2195,114 @@ void LoadOptions(void)
 	options.bSuppressUndoBufferPrompt = FALSE;
 #endif
 
-	if (RegOpenKeyEx(HKEY_CURRENT_USER, STR_REGKEY, 0, KEY_ALL_ACCESS, &key) == ERROR_SUCCESS) {
+	if (lstrlen(szMetapadIni) == 0) {
+		if (RegOpenKeyEx(HKEY_CURRENT_USER, STR_REGKEY, 0, KEY_ALL_ACCESS, &key) != ERROR_SUCCESS) {
+			ReportLastError();
+			return;
+		}
+	}
+
+	{
 		DWORD dwBufferSize;
 
 		dwBufferSize = sizeof(int);
 		
-		RegQueryValueEx(key, _T("bHideGotoOffset"), NULL, NULL, (LPBYTE)&options.bHideGotoOffset, &dwBufferSize);
-		RegQueryValueEx(key, _T("bSystemColours"), NULL, NULL, (LPBYTE)&options.bSystemColours, &dwBufferSize);
-		RegQueryValueEx(key, _T("bSystemColours2"), NULL, NULL, (LPBYTE)&options.bSystemColours2, &dwBufferSize);
-		RegQueryValueEx(key, _T("bNoSmartHome"), NULL, NULL, (LPBYTE)&options.bNoSmartHome, &dwBufferSize);
-		RegQueryValueEx(key, _T("bNoAutoSaveExt"), NULL, NULL, (LPBYTE)&options.bNoAutoSaveExt, &dwBufferSize);
-		RegQueryValueEx(key, _T("bContextCursor"), NULL, NULL, (LPBYTE)&options.bContextCursor, &dwBufferSize);
-		RegQueryValueEx(key, _T("bCurrentFindFont"), NULL, NULL, (LPBYTE)&options.bCurrentFindFont, &dwBufferSize);
-		RegQueryValueEx(key, _T("bPrintWithSecondaryFont"), NULL, NULL, (LPBYTE)&options.bPrintWithSecondaryFont, &dwBufferSize);
-		RegQueryValueEx(key, _T("bNoSaveHistory"), NULL, NULL, (LPBYTE)&options.bNoSaveHistory, &dwBufferSize);
-		RegQueryValueEx(key, _T("bNoFindAutoSelect"), NULL, NULL, (LPBYTE)&options.bNoFindAutoSelect, &dwBufferSize);
-		RegQueryValueEx(key, _T("bRecentOnOwn"), NULL, NULL, (LPBYTE)&options.bRecentOnOwn, &dwBufferSize);
-		RegQueryValueEx(key, _T("bDontInsertTime"), NULL, NULL, (LPBYTE)&options.bDontInsertTime, &dwBufferSize);
-		RegQueryValueEx(key, _T("bNoWarningPrompt"), NULL, NULL, (LPBYTE)&options.bNoWarningPrompt, &dwBufferSize);
-		RegQueryValueEx(key, _T("bUnFlatToolbar"), NULL, NULL, (LPBYTE)&options.bUnFlatToolbar, &dwBufferSize);
-		RegQueryValueEx(key, _T("bStickyWindow"), NULL, NULL, (LPBYTE)&options.bStickyWindow, &dwBufferSize);
-		RegQueryValueEx(key, _T("bReadOnlyMenu"), NULL, NULL, (LPBYTE)&options.bReadOnlyMenu, &dwBufferSize);
-//		RegQueryValueEx(key, _T("nStatusFontWidth"), NULL, NULL, (LPBYTE)&options.nStatusFontWidth, &dwBufferSize);
-		RegQueryValueEx(key, _T("nSelectionMarginWidth"), NULL, NULL, (LPBYTE)&options.nSelectionMarginWidth, &dwBufferSize);		
-		RegQueryValueEx(key, _T("nMaxMRU"), NULL, NULL, (LPBYTE)&options.nMaxMRU, &dwBufferSize);
-		RegQueryValueEx(key, _T("nFormatIndex"), NULL, NULL, (LPBYTE)&options.nFormatIndex, &dwBufferSize);
-		RegQueryValueEx(key, _T("nTransparentPct"), NULL, NULL, (LPBYTE)&options.nTransparentPct, &dwBufferSize);
-		RegQueryValueEx(key, _T("bNoCaptionDir"), NULL, NULL, (LPBYTE)&options.bNoCaptionDir, &dwBufferSize);
-		RegQueryValueEx(key, _T("bAutoIndent"), NULL, NULL, (LPBYTE)&options.bAutoIndent, &dwBufferSize);
-		RegQueryValueEx(key, _T("bInsertSpaces"), NULL, NULL, (LPBYTE)&options.bInsertSpaces, &dwBufferSize);
-		RegQueryValueEx(key, _T("bFindAutoWrap"), NULL, NULL, (LPBYTE)&options.bFindAutoWrap, &dwBufferSize);
-		RegQueryValueEx(key, _T("bQuickExit"), NULL, NULL, (LPBYTE)&options.bQuickExit, &dwBufferSize);
-		RegQueryValueEx(key, _T("bSaveWindowPlacement"), NULL, NULL, (LPBYTE)&options.bSaveWindowPlacement, &dwBufferSize);
-		RegQueryValueEx(key, _T("bSaveMenuSettings"), NULL, NULL, (LPBYTE)&options.bSaveMenuSettings, &dwBufferSize);
-		RegQueryValueEx(key, _T("bLaunchClose"), NULL, NULL, (LPBYTE)&options.bLaunchClose, &dwBufferSize);
-		RegQueryValueEx(key, _T("bNoFaves"), NULL, NULL, (LPBYTE)&options.bNoFaves, &dwBufferSize);
+		LoadOptionNumeric(key, _T("bHideGotoOffset"), (LPBYTE)&options.bHideGotoOffset, dwBufferSize);
+		LoadOptionNumeric(key, _T("bSystemColours"), (LPBYTE)&options.bSystemColours, dwBufferSize);
+		LoadOptionNumeric(key, _T("bSystemColours2"), (LPBYTE)&options.bSystemColours2, dwBufferSize);
+		LoadOptionNumeric(key, _T("bNoSmartHome"), (LPBYTE)&options.bNoSmartHome, dwBufferSize);
+		LoadOptionNumeric(key, _T("bNoAutoSaveExt"), (LPBYTE)&options.bNoAutoSaveExt, dwBufferSize);
+		LoadOptionNumeric(key, _T("bContextCursor"), (LPBYTE)&options.bContextCursor, dwBufferSize);
+		LoadOptionNumeric(key, _T("bCurrentFindFont"), (LPBYTE)&options.bCurrentFindFont, dwBufferSize);
+		LoadOptionNumeric(key, _T("bPrintWithSecondaryFont"), (LPBYTE)&options.bPrintWithSecondaryFont, dwBufferSize);
+		LoadOptionNumeric(key, _T("bNoSaveHistory"), (LPBYTE)&options.bNoSaveHistory, dwBufferSize);
+		LoadOptionNumeric(key, _T("bNoFindAutoSelect"), (LPBYTE)&options.bNoFindAutoSelect, dwBufferSize);
+		LoadOptionNumeric(key, _T("bRecentOnOwn"), (LPBYTE)&options.bRecentOnOwn, dwBufferSize);
+		LoadOptionNumeric(key, _T("bDontInsertTime"), (LPBYTE)&options.bDontInsertTime, dwBufferSize);
+		LoadOptionNumeric(key, _T("bNoWarningPrompt"), (LPBYTE)&options.bNoWarningPrompt, dwBufferSize);
+		LoadOptionNumeric(key, _T("bUnFlatToolbar"), (LPBYTE)&options.bUnFlatToolbar, dwBufferSize);
+		LoadOptionNumeric(key, _T("bStickyWindow"), (LPBYTE)&options.bStickyWindow, dwBufferSize);
+		LoadOptionNumeric(key, _T("bReadOnlyMenu"), (LPBYTE)&options.bReadOnlyMenu, dwBufferSize);
+//		LoadOptionNumeric(key, _T("nStatusFontWidth"), (LPBYTE)&options.nStatusFontWidth, dwBufferSize);
+		LoadOptionNumeric(key, _T("nSelectionMarginWidth"), (LPBYTE)&options.nSelectionMarginWidth, dwBufferSize);		
+		LoadOptionNumeric(key, _T("nMaxMRU"), (LPBYTE)&options.nMaxMRU, dwBufferSize);
+		LoadOptionNumeric(key, _T("nFormatIndex"), (LPBYTE)&options.nFormatIndex, dwBufferSize);
+		LoadOptionNumeric(key, _T("nTransparentPct"), (LPBYTE)&options.nTransparentPct, dwBufferSize);
+		LoadOptionNumeric(key, _T("bNoCaptionDir"), (LPBYTE)&options.bNoCaptionDir, dwBufferSize);
+		LoadOptionNumeric(key, _T("bAutoIndent"), (LPBYTE)&options.bAutoIndent, dwBufferSize);
+		LoadOptionNumeric(key, _T("bInsertSpaces"), (LPBYTE)&options.bInsertSpaces, dwBufferSize);
+		LoadOptionNumeric(key, _T("bFindAutoWrap"), (LPBYTE)&options.bFindAutoWrap, dwBufferSize);
+		LoadOptionNumeric(key, _T("bQuickExit"), (LPBYTE)&options.bQuickExit, dwBufferSize);
+		LoadOptionNumeric(key, _T("bSaveWindowPlacement"), (LPBYTE)&options.bSaveWindowPlacement, dwBufferSize);
+		LoadOptionNumeric(key, _T("bSaveMenuSettings"), (LPBYTE)&options.bSaveMenuSettings, dwBufferSize);
+		LoadOptionNumeric(key, _T("bLaunchClose"), (LPBYTE)&options.bLaunchClose, dwBufferSize);
+		LoadOptionNumeric(key, _T("bNoFaves"), (LPBYTE)&options.bNoFaves, dwBufferSize);
 #ifndef USE_RICH_EDIT
-		RegQueryValueEx(key, _T("bDefaultPrintFont"), NULL, NULL, (LPBYTE)&options.bDefaultPrintFont, &dwBufferSize);
-		RegQueryValueEx(key, _T("bAlwaysLaunch"), NULL, NULL, (LPBYTE)&options.bAlwaysLaunch, &dwBufferSize);
+		LoadOptionNumeric(key, _T("bDefaultPrintFont"), (LPBYTE)&options.bDefaultPrintFont, dwBufferSize);
+		LoadOptionNumeric(key, _T("bAlwaysLaunch"), (LPBYTE)&options.bAlwaysLaunch, dwBufferSize);
 #else
-		RegQueryValueEx(key, _T("bLinkDoubleClick"), NULL, NULL, (LPBYTE)&options.bLinkDoubleClick, &dwBufferSize);
-		RegQueryValueEx(key, _T("bHideScrollbars"), NULL, NULL, (LPBYTE)&options.bHideScrollbars, &dwBufferSize);
-		RegQueryValueEx(key, _T("bSuppressUndoBufferPrompt"), NULL, NULL, (LPBYTE)&options.bSuppressUndoBufferPrompt, &dwBufferSize);
+		LoadOptionNumeric(key, _T("bLinkDoubleClick"), (LPBYTE)&options.bLinkDoubleClick, dwBufferSize);
+		LoadOptionNumeric(key, _T("bHideScrollbars"), (LPBYTE)&options.bHideScrollbars, dwBufferSize);
+		LoadOptionNumeric(key, _T("bSuppressUndoBufferPrompt"), (LPBYTE)&options.bSuppressUndoBufferPrompt, dwBufferSize);
 #endif
-		RegQueryValueEx(key, _T("nLaunchSave"), NULL, NULL, (LPBYTE)&options.nLaunchSave, &dwBufferSize);
-		RegQueryValueEx(key, _T("nTabStops"), NULL, NULL, (LPBYTE)&options.nTabStops, &dwBufferSize);
-		RegQueryValueEx(key, _T("nPrimaryFont"), NULL, NULL, (LPBYTE)&options.nPrimaryFont, &dwBufferSize);
-		RegQueryValueEx(key, _T("nSecondaryFont"), NULL, NULL, (LPBYTE)&options.nSecondaryFont, &dwBufferSize);
+		LoadOptionNumeric(key, _T("nLaunchSave"), (LPBYTE)&options.nLaunchSave, dwBufferSize);
+		LoadOptionNumeric(key, _T("nTabStops"), (LPBYTE)&options.nTabStops, dwBufferSize);
+		LoadOptionNumeric(key, _T("nPrimaryFont"), (LPBYTE)&options.nPrimaryFont, dwBufferSize);
+		LoadOptionNumeric(key, _T("nSecondaryFont"), (LPBYTE)&options.nSecondaryFont, dwBufferSize);
 		dwBufferSize = sizeof(LOGFONT);
 #ifdef BUILD_METAPAD_UNICODE
-		RegQueryValueEx(key, _T("PrimaryFont_U"), NULL, NULL, (LPBYTE)&options.PrimaryFont, &dwBufferSize);
-		RegQueryValueEx(key, _T("SecondaryFont_U"), NULL, NULL, (LPBYTE)&options.SecondaryFont, &dwBufferSize);
+		LoadOptionBinary(key, _T("PrimaryFont_U"), (LPBYTE)&options.PrimaryFont, dwBufferSize);
+		LoadOptionBinary(key, _T("SecondaryFont_U"), (LPBYTE)&options.SecondaryFont, dwBufferSize);
 #else
-		RegQueryValueEx(key, _T("PrimaryFont"), NULL, NULL, (LPBYTE)&options.PrimaryFont, &dwBufferSize);
-		RegQueryValueEx(key, _T("SecondaryFont"), NULL, NULL, (LPBYTE)&options.SecondaryFont, &dwBufferSize);
+		LoadOptionBinary(key, _T("PrimaryFont"), (LPBYTE)&options.PrimaryFont, dwBufferSize);
+		LoadOptionBinary(key, _T("SecondaryFont"), (LPBYTE)&options.SecondaryFont, dwBufferSize);
 #endif
 		dwBufferSize = sizeof(options.szBrowser);
-		RegQueryValueEx(key, _T("szBrowser"), NULL, NULL, (LPBYTE)&options.szBrowser, &dwBufferSize);
+		LoadOptionString(key, _T("szBrowser"), (LPBYTE)&options.szBrowser, dwBufferSize);
 		dwBufferSize = sizeof(options.szBrowser2);
-		RegQueryValueEx(key, _T("szBrowser2"), NULL, NULL, (LPBYTE)&options.szBrowser2, &dwBufferSize);
+		LoadOptionString(key, _T("szBrowser2"), (LPBYTE)&options.szBrowser2, dwBufferSize);
 		dwBufferSize = sizeof(options.szLangPlugin);
-		RegQueryValueEx(key, _T("szLangPlugin"), NULL, NULL, (LPBYTE)&options.szLangPlugin, &dwBufferSize);
+		LoadOptionString(key, _T("szLangPlugin"), (LPBYTE)&options.szLangPlugin, dwBufferSize);
 		dwBufferSize = sizeof(options.szFavDir);
-		RegQueryValueEx(key, _T("szFavDir"), NULL, NULL, (LPBYTE)&options.szFavDir, &dwBufferSize);
+		LoadOptionString(key, _T("szFavDir"), (LPBYTE)&options.szFavDir, dwBufferSize);
 		dwBufferSize = sizeof(options.szArgs);
-		RegQueryValueEx(key, _T("szArgs"), NULL, NULL, (LPBYTE)&options.szArgs, &dwBufferSize);
+		LoadOptionString(key, _T("szArgs"), (LPBYTE)&options.szArgs, dwBufferSize);
 		dwBufferSize = sizeof(options.szArgs2);
-		RegQueryValueEx(key, _T("szArgs2"), NULL, NULL, (LPBYTE)&options.szArgs2, &dwBufferSize);
+		LoadOptionString(key, _T("szArgs2"), (LPBYTE)&options.szArgs2, dwBufferSize);
 		dwBufferSize = sizeof(options.szQuote);
-		RegQueryValueEx(key, _T("szQuote"), NULL, NULL, (LPBYTE)&options.szQuote, &dwBufferSize);
-		dwBufferSize = sizeof(options.MacroArray);
-		RegQueryValueEx(key, _T("MacroArray"), NULL, NULL, (LPBYTE)&options.MacroArray, &dwBufferSize);
+		LoadOptionString(key, _T("szQuote"), (LPBYTE)&options.szQuote, dwBufferSize);
+
+		if (key != NULL) {
+			dwBufferSize = sizeof(options.MacroArray);
+			LoadOptionBinary(key, _T("MacroArray"), (LPBYTE)&options.MacroArray, dwBufferSize);
+		}
+		else {
+			LoadOptionString(key, _T("szMacroArray0"), (LPBYTE)&options.MacroArray[0], MAXMACRO); 
+			LoadOptionString(key, _T("szMacroArray1"), (LPBYTE)&options.MacroArray[1], MAXMACRO); 
+			LoadOptionString(key, _T("szMacroArray2"), (LPBYTE)&options.MacroArray[2], MAXMACRO); 
+			LoadOptionString(key, _T("szMacroArray3"), (LPBYTE)&options.MacroArray[3], MAXMACRO); 
+			LoadOptionString(key, _T("szMacroArray4"), (LPBYTE)&options.MacroArray[4], MAXMACRO); 
+			LoadOptionString(key, _T("szMacroArray5"), (LPBYTE)&options.MacroArray[5], MAXMACRO); 
+			LoadOptionString(key, _T("szMacroArray6"), (LPBYTE)&options.MacroArray[6], MAXMACRO); 
+			LoadOptionString(key, _T("szMacroArray7"), (LPBYTE)&options.MacroArray[7], MAXMACRO); 
+			LoadOptionString(key, _T("szMacroArray8"), (LPBYTE)&options.MacroArray[8], MAXMACRO); 
+			LoadOptionString(key, _T("szMacroArray9"), (LPBYTE)&options.MacroArray[9], MAXMACRO); 
+		}
+		
 		dwBufferSize = sizeof(COLORREF);
-		RegQueryValueEx(key, _T("BackColour"), NULL, NULL, (LPBYTE)&options.BackColour, &dwBufferSize);
-		RegQueryValueEx(key, _T("FontColour"), NULL, NULL, (LPBYTE)&options.FontColour, &dwBufferSize);
-		RegQueryValueEx(key, _T("BackColour2"), NULL, NULL, (LPBYTE)&options.BackColour2, &dwBufferSize);
-		RegQueryValueEx(key, _T("FontColour2"), NULL, NULL, (LPBYTE)&options.FontColour2, &dwBufferSize);
+		LoadOptionBinary(key, _T("BackColour"), (LPBYTE)&options.BackColour, dwBufferSize);
+		LoadOptionBinary(key, _T("FontColour"), (LPBYTE)&options.FontColour, dwBufferSize);
+		LoadOptionBinary(key, _T("BackColour2"), (LPBYTE)&options.BackColour2, dwBufferSize);
+		LoadOptionBinary(key, _T("FontColour2"), (LPBYTE)&options.FontColour2, dwBufferSize);
+		
 		dwBufferSize = sizeof(RECT);
-		RegQueryValueEx(key, _T("rMargins"), NULL, NULL, (LPBYTE)&options.rMargins, &dwBufferSize);
-		RegCloseKey(key);
+		LoadOptionBinary(key, _T("rMargins"), (LPBYTE)&options.rMargins, dwBufferSize);
+
+		if (key != NULL) {
+			RegCloseKey(key);
+		}
 	}
+
 #ifndef USE_RICH_EDIT
 	if (options.bSystemColours) {
 		options.BackColour = GetSysColor(COLOR_WINDOW);
@@ -2243,75 +2315,182 @@ void LoadOptions(void)
 #endif
 }
 
+void LoadOptionString(HKEY hKey, LPCSTR name, BYTE* lpData, DWORD cbData)
+{
+	if (hKey) {
+		RegQueryValueEx(hKey, name, NULL, NULL, lpData, &cbData);
+	}
+	else {
+		GetPrivateProfileString("Options", name, (char*)lpData, (char*)lpData, cbData, szMetapadIni);
+	}
+}
+
+void LoadOptionNumeric(HKEY hKey, LPCSTR name, BYTE* lpData, DWORD cbData)
+{
+	if (hKey) {
+		RegQueryValueEx(hKey, name, NULL, NULL, lpData, &cbData);
+	}
+	else {
+		char val[10];
+		if (GetPrivateProfileString("Options", name, NULL, val, 10, szMetapadIni) > 0) {
+			*lpData = atoi(val);
+		}
+	}
+}
+
+void LoadOptionBinary(HKEY hKey, LPCSTR name, BYTE* lpData, DWORD cbData)
+{
+	if (hKey) {
+		RegQueryValueEx(hKey, name, NULL, NULL, lpData, &cbData);
+	}
+	else {
+		base64_decodestate state;
+		char *szBuffer = (LPTSTR)GlobalAlloc(GPTR, cbData * sizeof(TCHAR) * 2);
+
+		if (GetPrivateProfileString("Options", name, (char*)lpData, szBuffer, cbData * 2, szMetapadIni) > 0) {
+			int i;
+			for (i = 0; i < lstrlen(szBuffer); ++i) {
+				if (szBuffer[i] == '-') {
+					szBuffer[i] = '=';
+				}
+			}
+			base64_init_decodestate(&state);
+			base64_decode_block(szBuffer, lstrlen(szBuffer), (char*)lpData, &state);
+		}
+	}
+}
+
+BOOL SaveOption(HKEY hKey, LPCSTR name, DWORD dwType, CONST BYTE* lpData, DWORD cbData) 
+{
+	if (hKey) {
+		return (RegSetValueEx(hKey, name, 0, dwType, lpData, cbData) == ERROR_SUCCESS);
+	}
+	else {
+		BOOLEAN succeeded = TRUE;
+		switch (dwType) {
+			case REG_DWORD: {
+				char val[10];
+				wsprintf(val, "%d", (int)(*lpData));
+				succeeded = WritePrivateProfileString("Options", name, val, szMetapadIni);
+				break;
+			}
+			case REG_SZ:
+				succeeded = WritePrivateProfileString("Options", name, (char*)lpData, szMetapadIni);
+				break;
+			case REG_BINARY: {
+				base64_encodestate state_in;
+				INT i;
+				char *szBuffer = (LPTSTR)GlobalAlloc(GPTR, 2 * cbData * sizeof(TCHAR));
+				ZeroMemory(szBuffer, 2 * cbData * sizeof(TCHAR));
+				base64_init_encodestate(&state_in);
+				base64_encode_block((char*)lpData, cbData, szBuffer, &state_in);
+				for (i = 0; i < lstrlen(szBuffer); ++i) {
+					if (szBuffer[i] == '=') {
+						szBuffer[i] = '-';
+					}
+				}
+				succeeded = WritePrivateProfileString("Options", name, szBuffer, szMetapadIni);
+				break;
+			}
+		}
+		return succeeded;
+	}
+}
+
+
 void SaveOptions(void)
 {
-	HKEY key;
+	HKEY key = NULL;
+	BOOL writeSucceeded = TRUE;
 
-	RegCreateKeyEx(HKEY_CURRENT_USER, STR_REGKEY, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, NULL);
+	if (lstrlen(szMetapadIni) == 0) {
+		RegCreateKeyEx(HKEY_CURRENT_USER, STR_REGKEY, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, NULL);
+	}
 
-	RegSetValueEx(key, _T("bSystemColours"), 0, REG_DWORD, (LPBYTE)&options.bSystemColours, sizeof(BOOL));
-	RegSetValueEx(key, _T("bSystemColours2"), 0, REG_DWORD, (LPBYTE)&options.bSystemColours2, sizeof(BOOL));
-	RegSetValueEx(key, _T("bNoSmartHome"), 0, REG_DWORD, (LPBYTE)&options.bNoSmartHome, sizeof(BOOL));
-	RegSetValueEx(key, _T("bNoAutoSaveExt"), 0, REG_DWORD, (LPBYTE)&options.bNoAutoSaveExt, sizeof(BOOL));
-	RegSetValueEx(key, _T("bContextCursor"), 0, REG_DWORD, (LPBYTE)&options.bContextCursor, sizeof(BOOL));
-	RegSetValueEx(key, _T("bCurrentFindFont"), 0, REG_DWORD, (LPBYTE)&options.bCurrentFindFont, sizeof(BOOL));
-	RegSetValueEx(key, _T("bPrintWithSecondaryFont"), 0, REG_DWORD, (LPBYTE)&options.bPrintWithSecondaryFont, sizeof(BOOL));
-	RegSetValueEx(key, _T("bNoSaveHistory"), 0, REG_DWORD, (LPBYTE)&options.bNoSaveHistory, sizeof(BOOL));
-	RegSetValueEx(key, _T("bNoFindAutoSelect"), 0, REG_DWORD, (LPBYTE)&options.bNoFindAutoSelect, sizeof(BOOL));
-	RegSetValueEx(key, _T("bHideGotoOffset"), 0, REG_DWORD, (LPBYTE)&options.bHideGotoOffset, sizeof(BOOL));
-	RegSetValueEx(key, _T("bRecentOnOwn"), 0, REG_DWORD, (LPBYTE)&options.bRecentOnOwn, sizeof(BOOL));
-	RegSetValueEx(key, _T("bDontInsertTime"), 0, REG_DWORD, (LPBYTE)&options.bDontInsertTime, sizeof(BOOL));
-	RegSetValueEx(key, _T("bNoWarningPrompt"), 0, REG_DWORD, (LPBYTE)&options.bNoWarningPrompt, sizeof(BOOL));
-	RegSetValueEx(key, _T("bUnFlatToolbar"), 0, REG_DWORD, (LPBYTE)&options.bUnFlatToolbar, sizeof(BOOL));
-	RegSetValueEx(key, _T("bReadOnlyMenu"), 0, REG_DWORD, (LPBYTE)&options.bReadOnlyMenu, sizeof(BOOL));
-	RegSetValueEx(key, _T("bStickyWindow"), 0, REG_DWORD, (LPBYTE)&options.bStickyWindow, sizeof(BOOL));
-//	RegSetValueEx(key, _T("nStatusFontWidth"), 0, REG_DWORD, (LPBYTE)&options.nStatusFontWidth, sizeof(int));
-	RegSetValueEx(key, _T("nSelectionMarginWidth"), 0, REG_DWORD, (LPBYTE)&options.nSelectionMarginWidth, sizeof(int));
-	RegSetValueEx(key, _T("nMaxMRU"), 0, REG_DWORD, (LPBYTE)&options.nMaxMRU, sizeof(int));
-	RegSetValueEx(key, _T("nFormatIndex"), 0, REG_DWORD, (LPBYTE)&options.nFormatIndex, sizeof(int));
-	RegSetValueEx(key, _T("nTransparentPct"), 0, REG_DWORD, (LPBYTE)&options.nTransparentPct, sizeof(int));
-	RegSetValueEx(key, _T("bNoCaptionDir"), 0, REG_DWORD, (LPBYTE)&options.bNoCaptionDir, sizeof(BOOL));
-	RegSetValueEx(key, _T("bAutoIndent"), 0, REG_DWORD, (LPBYTE)&options.bAutoIndent, sizeof(BOOL));
-	RegSetValueEx(key, _T("bInsertSpaces"), 0, REG_DWORD, (LPBYTE)&options.bInsertSpaces, sizeof(BOOL));
- 	RegSetValueEx(key, _T("bFindAutoWrap"), 0, REG_DWORD, (LPBYTE)&options.bFindAutoWrap, sizeof(BOOL));
-	RegSetValueEx(key, _T("bQuickExit"), 0, REG_DWORD, (LPBYTE)&options.bQuickExit, sizeof(BOOL));
-	RegSetValueEx(key, _T("bSaveWindowPlacement"), 0, REG_DWORD, (LPBYTE)&options.bSaveWindowPlacement, sizeof(BOOL));
-	RegSetValueEx(key, _T("bSaveMenuSettings"), 0, REG_DWORD, (LPBYTE)&options.bSaveMenuSettings, sizeof(BOOL));
-	RegSetValueEx(key, _T("bLaunchClose"), 0, REG_DWORD, (LPBYTE)&options.bLaunchClose, sizeof(BOOL));
-	RegSetValueEx(key, _T("bNoFaves"), 0, REG_DWORD, (LPBYTE)&options.bNoFaves, sizeof(BOOL));
+	writeSucceeded &= SaveOption(key, _T("bSystemColours"), REG_DWORD, (LPBYTE)&options.bSystemColours, sizeof(BOOL));
+	writeSucceeded &= SaveOption(key, _T("bSystemColours2"), REG_DWORD, (LPBYTE)&options.bSystemColours2, sizeof(BOOL));
+	writeSucceeded &= SaveOption(key, _T("bNoSmartHome"), REG_DWORD, (LPBYTE)&options.bNoSmartHome, sizeof(BOOL));
+	writeSucceeded &= SaveOption(key, _T("bNoAutoSaveExt"), REG_DWORD, (LPBYTE)&options.bNoAutoSaveExt, sizeof(BOOL));
+	writeSucceeded &= SaveOption(key, _T("bContextCursor"), REG_DWORD, (LPBYTE)&options.bContextCursor, sizeof(BOOL));
+	writeSucceeded &= SaveOption(key, _T("bCurrentFindFont"), REG_DWORD, (LPBYTE)&options.bCurrentFindFont, sizeof(BOOL));
+	writeSucceeded &= SaveOption(key, _T("bPrintWithSecondaryFont"), REG_DWORD, (LPBYTE)&options.bPrintWithSecondaryFont, sizeof(BOOL));
+	writeSucceeded &= SaveOption(key, _T("bNoSaveHistory"), REG_DWORD, (LPBYTE)&options.bNoSaveHistory, sizeof(BOOL));
+	writeSucceeded &= SaveOption(key, _T("bNoFindAutoSelect"), REG_DWORD, (LPBYTE)&options.bNoFindAutoSelect, sizeof(BOOL));
+	writeSucceeded &= SaveOption(key, _T("bHideGotoOffset"), REG_DWORD, (LPBYTE)&options.bHideGotoOffset, sizeof(BOOL));
+	writeSucceeded &= SaveOption(key, _T("bRecentOnOwn"), REG_DWORD, (LPBYTE)&options.bRecentOnOwn, sizeof(BOOL));
+	writeSucceeded &= SaveOption(key, _T("bDontInsertTime"), REG_DWORD, (LPBYTE)&options.bDontInsertTime, sizeof(BOOL));
+	writeSucceeded &= SaveOption(key, _T("bNoWarningPrompt"), REG_DWORD, (LPBYTE)&options.bNoWarningPrompt, sizeof(BOOL));
+	writeSucceeded &= SaveOption(key, _T("bUnFlatToolbar"), REG_DWORD, (LPBYTE)&options.bUnFlatToolbar, sizeof(BOOL));
+	writeSucceeded &= SaveOption(key, _T("bReadOnlyMenu"), REG_DWORD, (LPBYTE)&options.bReadOnlyMenu, sizeof(BOOL));
+	writeSucceeded &= SaveOption(key, _T("bStickyWindow"), REG_DWORD, (LPBYTE)&options.bStickyWindow, sizeof(BOOL));
+//	writeSucceeded &= SaveOption(key, _T("nStatusFontWidth"), REG_DWORD, (LPBYTE)&options.nStatusFontWidth, sizeof(int));
+	writeSucceeded &= SaveOption(key, _T("nSelectionMarginWidth"), REG_DWORD, (LPBYTE)&options.nSelectionMarginWidth, sizeof(int));
+	writeSucceeded &= SaveOption(key, _T("nMaxMRU"), REG_DWORD, (LPBYTE)&options.nMaxMRU, sizeof(int));
+	writeSucceeded &= SaveOption(key, _T("nFormatIndex"), REG_DWORD, (LPBYTE)&options.nFormatIndex, sizeof(int));
+	writeSucceeded &= SaveOption(key, _T("nTransparentPct"), REG_DWORD, (LPBYTE)&options.nTransparentPct, sizeof(int));
+	writeSucceeded &= SaveOption(key, _T("bNoCaptionDir"), REG_DWORD, (LPBYTE)&options.bNoCaptionDir, sizeof(BOOL));
+	writeSucceeded &= SaveOption(key, _T("bAutoIndent"), REG_DWORD, (LPBYTE)&options.bAutoIndent, sizeof(BOOL));
+	writeSucceeded &= SaveOption(key, _T("bInsertSpaces"), REG_DWORD, (LPBYTE)&options.bInsertSpaces, sizeof(BOOL));
+ 	writeSucceeded &= SaveOption(key, _T("bFindAutoWrap"), REG_DWORD, (LPBYTE)&options.bFindAutoWrap, sizeof(BOOL));
+	writeSucceeded &= SaveOption(key, _T("bQuickExit"), REG_DWORD, (LPBYTE)&options.bQuickExit, sizeof(BOOL));
+	writeSucceeded &= SaveOption(key, _T("bSaveWindowPlacement"), REG_DWORD, (LPBYTE)&options.bSaveWindowPlacement, sizeof(BOOL));
+	writeSucceeded &= SaveOption(key, _T("bSaveMenuSettings"), REG_DWORD, (LPBYTE)&options.bSaveMenuSettings, sizeof(BOOL));
+	writeSucceeded &= SaveOption(key, _T("bLaunchClose"), REG_DWORD, (LPBYTE)&options.bLaunchClose, sizeof(BOOL));
+	writeSucceeded &= SaveOption(key, _T("bNoFaves"), REG_DWORD, (LPBYTE)&options.bNoFaves, sizeof(BOOL));
 #ifndef USE_RICH_EDIT
-	RegSetValueEx(key, _T("bDefaultPrintFont"), 0, REG_DWORD, (LPBYTE)&options.bDefaultPrintFont, sizeof(BOOL));
-	RegSetValueEx(key, _T("bAlwaysLaunch"), 0, REG_DWORD, (LPBYTE)&options.bAlwaysLaunch, sizeof(BOOL));
+	writeSucceeded &= SaveOption(key, _T("bDefaultPrintFont"), REG_DWORD, (LPBYTE)&options.bDefaultPrintFont, sizeof(BOOL));
+	writeSucceeded &= SaveOption(key, _T("bAlwaysLaunch"), REG_DWORD, (LPBYTE)&options.bAlwaysLaunch, sizeof(BOOL));
 #else
-	RegSetValueEx(key, _T("bLinkDoubleClick"), 0, REG_DWORD, (LPBYTE)&options.bLinkDoubleClick, sizeof(BOOL));
-	RegSetValueEx(key, _T("bHideScrollbars"), 0, REG_DWORD, (LPBYTE)&options.bHideScrollbars, sizeof(BOOL));
-	RegSetValueEx(key, _T("bSuppressUndoBufferPrompt"), 0, REG_DWORD, (LPBYTE)&options.bSuppressUndoBufferPrompt, sizeof(BOOL));
+	writeSucceeded &= SaveOption(key, _T("bLinkDoubleClick"), REG_DWORD, (LPBYTE)&options.bLinkDoubleClick, sizeof(BOOL));
+	writeSucceeded &= SaveOption(key, _T("bHideScrollbars"), REG_DWORD, (LPBYTE)&options.bHideScrollbars, sizeof(BOOL));
+	writeSucceeded &= SaveOption(key, _T("bSuppressUndoBufferPrompt"), REG_DWORD, (LPBYTE)&options.bSuppressUndoBufferPrompt, sizeof(BOOL));
 #endif
-	RegSetValueEx(key, _T("nLaunchSave"), 0, REG_DWORD, (LPBYTE)&options.nLaunchSave, sizeof(int));
-	RegSetValueEx(key, _T("nTabStops"), 0, REG_DWORD, (LPBYTE)&options.nTabStops, sizeof(int));
-	RegSetValueEx(key, _T("nPrimaryFont"), 0, REG_DWORD, (LPBYTE)&options.nPrimaryFont, sizeof(int));
-	RegSetValueEx(key, _T("nSecondaryFont"), 0, REG_DWORD, (LPBYTE)&options.nSecondaryFont, sizeof(int));
+	writeSucceeded &= SaveOption(key, _T("nLaunchSave"), REG_DWORD, (LPBYTE)&options.nLaunchSave, sizeof(int));
+	writeSucceeded &= SaveOption(key, _T("nTabStops"), REG_DWORD, (LPBYTE)&options.nTabStops, sizeof(int));
+	writeSucceeded &= SaveOption(key, _T("nPrimaryFont"), REG_DWORD, (LPBYTE)&options.nPrimaryFont, sizeof(int));
+	writeSucceeded &= SaveOption(key, _T("nSecondaryFont"), REG_DWORD, (LPBYTE)&options.nSecondaryFont, sizeof(int));
 #ifdef BUILD_METAPAD_UNICODE
-	RegSetValueEx(key, _T("PrimaryFont_U"), 0, REG_BINARY, (LPBYTE)&options.PrimaryFont, sizeof(LOGFONT));
-	RegSetValueEx(key, _T("SecondaryFont_U"), 0, REG_BINARY, (LPBYTE)&options.SecondaryFont, sizeof(LOGFONT));
+	writeSucceeded &= SaveOption(key, _T("PrimaryFont_U"), REG_BINARY, (LPBYTE)&options.PrimaryFont, sizeof(LOGFONT));
+	writeSucceeded &= SaveOption(key, _T("SecondaryFont_U"), REG_BINARY, (LPBYTE)&options.SecondaryFont, sizeof(LOGFONT));
 #else
-	RegSetValueEx(key, _T("PrimaryFont"), 0, REG_BINARY, (LPBYTE)&options.PrimaryFont, sizeof(LOGFONT));
-	RegSetValueEx(key, _T("SecondaryFont"), 0, REG_BINARY, (LPBYTE)&options.SecondaryFont, sizeof(LOGFONT));
+	writeSucceeded &= SaveOption(key, _T("PrimaryFont"), REG_BINARY, (LPBYTE)&options.PrimaryFont, sizeof(LOGFONT));
+	writeSucceeded &= SaveOption(key, _T("SecondaryFont"), REG_BINARY, (LPBYTE)&options.SecondaryFont, sizeof(LOGFONT));
 #endif
-	RegSetValueEx(key, _T("szBrowser"), 0, REG_SZ, (LPBYTE)&options.szBrowser, sizeof(options.szBrowser));
-	RegSetValueEx(key, _T("szArgs"), 0, REG_SZ, (LPBYTE)&options.szArgs, sizeof(options.szArgs));
-	RegSetValueEx(key, _T("szBrowser2"), 0, REG_SZ, (LPBYTE)&options.szBrowser2, sizeof(options.szBrowser2));
-	RegSetValueEx(key, _T("szArgs2"), 0, REG_SZ, (LPBYTE)&options.szArgs2, sizeof(options.szArgs2));
-	RegSetValueEx(key, _T("szQuote"), 0, REG_SZ, (LPBYTE)&options.szQuote, sizeof(options.szQuote));
-	RegSetValueEx(key, _T("szLangPlugin"), 0, REG_SZ, (LPBYTE)&options.szLangPlugin, sizeof(options.szLangPlugin));
-	RegSetValueEx(key, _T("szFavDir"), 0, REG_SZ, (LPBYTE)&options.szFavDir, sizeof(options.szFavDir));
-	RegSetValueEx(key, _T("MacroArray"), 0, REG_BINARY, (LPBYTE)&options.MacroArray, sizeof(options.MacroArray));
-	RegSetValueEx(key, _T("BackColour"), 0, REG_BINARY, (LPBYTE)&options.BackColour, sizeof(COLORREF));
-	RegSetValueEx(key, _T("FontColour"), 0, REG_BINARY, (LPBYTE)&options.FontColour, sizeof(COLORREF));
-	RegSetValueEx(key, _T("BackColour2"), 0, REG_BINARY, (LPBYTE)&options.BackColour2, sizeof(COLORREF));
-	RegSetValueEx(key, _T("FontColour2"), 0, REG_BINARY, (LPBYTE)&options.FontColour2, sizeof(COLORREF));
-	RegSetValueEx(key, _T("rMargins"), 0, REG_BINARY, (LPBYTE)&options.rMargins, sizeof(RECT));
-	RegCloseKey(key);
+	writeSucceeded &= SaveOption(key, _T("szBrowser"), REG_SZ, (LPBYTE)&options.szBrowser, sizeof(options.szBrowser));
+	writeSucceeded &= SaveOption(key, _T("szArgs"), REG_SZ, (LPBYTE)&options.szArgs, sizeof(options.szArgs));
+	writeSucceeded &= SaveOption(key, _T("szBrowser2"), REG_SZ, (LPBYTE)&options.szBrowser2, sizeof(options.szBrowser2));
+	writeSucceeded &= SaveOption(key, _T("szArgs2"), REG_SZ, (LPBYTE)&options.szArgs2, sizeof(options.szArgs2));
+	writeSucceeded &= SaveOption(key, _T("szQuote"), REG_SZ, (LPBYTE)&options.szQuote, sizeof(options.szQuote));
+	writeSucceeded &= SaveOption(key, _T("szLangPlugin"), REG_SZ, (LPBYTE)&options.szLangPlugin, sizeof(options.szLangPlugin));
+	writeSucceeded &= SaveOption(key, _T("szFavDir"), REG_SZ, (LPBYTE)&options.szFavDir, sizeof(options.szFavDir));
+	if (key) {
+		writeSucceeded &= SaveOption(key, _T("MacroArray"), REG_BINARY, (LPBYTE)&options.MacroArray, sizeof(options.MacroArray));
+	}
+	else {
+		writeSucceeded &= SaveOption(key, _T("szMacroArray0"), REG_SZ, (LPBYTE)&options.MacroArray[0], MAXMACRO);
+		writeSucceeded &= SaveOption(key, _T("szMacroArray1"), REG_SZ, (LPBYTE)&options.MacroArray[1], MAXMACRO);
+		writeSucceeded &= SaveOption(key, _T("szMacroArray2"), REG_SZ, (LPBYTE)&options.MacroArray[2], MAXMACRO);
+		writeSucceeded &= SaveOption(key, _T("szMacroArray3"), REG_SZ, (LPBYTE)&options.MacroArray[3], MAXMACRO);
+		writeSucceeded &= SaveOption(key, _T("szMacroArray4"), REG_SZ, (LPBYTE)&options.MacroArray[4], MAXMACRO);
+		writeSucceeded &= SaveOption(key, _T("szMacroArray5"), REG_SZ, (LPBYTE)&options.MacroArray[5], MAXMACRO);
+		writeSucceeded &= SaveOption(key, _T("szMacroArray6"), REG_SZ, (LPBYTE)&options.MacroArray[6], MAXMACRO);
+		writeSucceeded &= SaveOption(key, _T("szMacroArray7"), REG_SZ, (LPBYTE)&options.MacroArray[7], MAXMACRO);
+		writeSucceeded &= SaveOption(key, _T("szMacroArray8"), REG_SZ, (LPBYTE)&options.MacroArray[8], MAXMACRO);
+		writeSucceeded &= SaveOption(key, _T("szMacroArray9"), REG_SZ, (LPBYTE)&options.MacroArray[9], MAXMACRO);
+	}
+	writeSucceeded &= SaveOption(key, _T("BackColour"), REG_BINARY, (LPBYTE)&options.BackColour, sizeof(COLORREF));
+	writeSucceeded &= SaveOption(key, _T("FontColour"), REG_BINARY, (LPBYTE)&options.FontColour, sizeof(COLORREF));
+	writeSucceeded &= SaveOption(key, _T("BackColour2"), REG_BINARY, (LPBYTE)&options.BackColour2, sizeof(COLORREF));
+	writeSucceeded &= SaveOption(key, _T("FontColour2"), REG_BINARY, (LPBYTE)&options.FontColour2, sizeof(COLORREF));
+	writeSucceeded &= SaveOption(key, _T("rMargins"), REG_BINARY, (LPBYTE)&options.rMargins, sizeof(RECT));
+	
+	if (!writeSucceeded) {
+		ReportLastError();
+	}
+	
+	if (key) {
+		RegCloseKey(key);
+	}
 }
 
 void LoadWindowPlacement(int* left, int* top, int* width, int* height, int* nShow)
@@ -2431,6 +2610,8 @@ void SaveWindowPlacement(HWND hWndSave)
 	width = rect.right - left;
 	height = rect.bottom - top;
 
+	//TODOini
+
 	if (RegCreateKeyEx(HKEY_CURRENT_USER, STR_REGKEY, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, NULL) != ERROR_SUCCESS) {
 		ReportLastError();
 		return;
@@ -2447,6 +2628,7 @@ void SaveWindowPlacement(HWND hWndSave)
 void SaveMenusAndData(void)
 {
 	HKEY key;
+	//TODOini
 
 	if (RegCreateKeyEx(HKEY_CURRENT_USER, STR_REGKEY, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, NULL) != ERROR_SUCCESS) {
 		ReportLastError();
@@ -2491,6 +2673,8 @@ void SaveMRUInfo(LPCTSTR szFullPath)
 
 	if (options.nMaxMRU == 0)
 		return;	
+
+	//TODOini
 
 	if (RegCreateKeyEx(HKEY_CURRENT_USER, STR_REGKEY, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, NULL) != ERROR_SUCCESS) {
 		ReportLastError();
@@ -2585,7 +2769,7 @@ void PopulateMRUList(void)
 	TCHAR szBuff2[MAXFN];
 	HMENU hmenu = GetMenu(hwnd);
 	HMENU hsub;
-	TCHAR szKey[6];
+	TCHAR szKey[7];
 	MENUITEMINFO mio;
 
 	if (options.bRecentOnOwn)
@@ -4242,6 +4426,8 @@ BOOL CALLBACK AdvancedPageProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lP
 				HKEY key;
 				TCHAR szKey[6];
 				UINT i;
+
+				//TODOini
 
 				if (RegCreateKeyEx(HKEY_CURRENT_USER, STR_REGKEY, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, NULL) != ERROR_SUCCESS) {
 					ReportLastError();
@@ -6907,26 +7093,42 @@ endinsertfile:
 			case ID_SET_MACRO_9:
 			case ID_SET_MACRO_10: {
 				CHARRANGE cr;
+				int macroIndex = LOWORD(wParam) - ID_SET_MACRO_1;
+
 #ifdef USE_RICH_EDIT
 				SendMessage(client, EM_EXGETSEL, 0, (LPARAM)&cr);
 #else
 				SendMessage(client, EM_GETSEL, (WPARAM)&cr.cpMin, (LPARAM)&cr.cpMax);
 #endif
-				if (cr.cpMax - cr.cpMin > MAXMACRO) {
+				if (cr.cpMax - cr.cpMin > MAXMACRO - 1) {
 					ERROROUT(GetString(IDS_MACRO_LENGTH_ERROR));
 					break;
 				}
 #ifdef USE_RICH_EDIT
-				SendMessage(client, EM_GETSELTEXT, 0, (LPARAM)options.MacroArray[LOWORD(wParam) - ID_SET_MACRO_1]);
+				SendMessage(client, EM_GETSELTEXT, 0, (LPARAM)options.MacroArray[macroIndex]);
 #else
-				GetClientRange(cr.cpMin, cr.cpMax, options.MacroArray[LOWORD(wParam) - ID_SET_MACRO_1]);
+				GetClientRange(cr.cpMin, cr.cpMax, options.MacroArray[macroIndex]);
 #endif
-				{
+
+				if (!EncodeWithEscapeSeqs(options.MacroArray[macroIndex])) {
+					ERROROUT(GetString(IDS_MACRO_LENGTH_ERROR));
+					break;
+				}
+				else {
 					HKEY key;
 
-					RegCreateKeyEx(HKEY_CURRENT_USER, STR_REGKEY, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, NULL);
-					RegSetValueEx(key, _T("MacroArray"), 0, REG_BINARY, (LPBYTE)&options.MacroArray, sizeof(options.MacroArray));
-					RegCloseKey(key);
+					if (lstrlen(szMetapadIni) == 0) {
+						RegCreateKeyEx(HKEY_CURRENT_USER, STR_REGKEY, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, NULL);
+						RegSetValueEx(key, _T("MacroArray"), 0, REG_BINARY, (LPBYTE)&options.MacroArray, sizeof(options.MacroArray));
+						RegCloseKey(key);
+					}
+					else {
+						char entry[14];
+						wsprintf(entry, "szMacroArray%d", macroIndex);
+						if (!SaveOption(NULL, entry, REG_SZ, (LPBYTE)&options.MacroArray[macroIndex], MAXMACRO)) {
+							ReportLastError();
+						}
+					}
 				}
 
 				break;
@@ -7368,6 +7570,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				if (szCmdLine[0] == ' ') ++szCmdLine;
 			}
 		}
+	}
+
+	// New INI mode
+	if (TRUE) {
+		TCHAR* pch;
+		GetModuleFileName(hinstThis, szMetapadIni, MAXFN);
+			
+		pch = _tcsrchr(szMetapadIni, _T('\\'));
+		++pch;
+		*pch = '\0';
+		lstrcat(szMetapadIni, "metapad.ini");
 	}
 
 	GetCurrentDirectory(MAXFN, szDir);
