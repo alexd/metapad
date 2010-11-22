@@ -1051,7 +1051,7 @@ BEGIN
     IDS_RICHED_MISSING_ERROR 
                             "metapad requires RICHED20.DLL to be installed on your system.\n\nSee the FAQ on the website for further information."
     IDS_COMMAND_LINE_OPTIONS 
-                            "Usage:  metapad [/v | /s] [/p | /g row:col | /e] [filename]\n\nOption descriptions:\n\n\t/g row:col - goto position at row and column\n\t/e - goto end of file\n\t/p - print file\n\t/v - disable plugin version checking\n\t/s - skip loading language plugin"
+	"Usage:  metapad [/i | /m | /v | /s] [/p | /g row:col | /e] [filename]\n\nOption descriptions:\n\n\t/i - force INI mode for settings\n\t/m - migrate all registry settings to INI file\n\t/g row:col - goto position at row and column\n\t/e - goto end of file\n\t/p - print file\n\t/v - disable plugin version checking\n\t/s - skip loading language plugin"
     IDS_GLOBALLOCK_ERROR    "GlobalLock failed"
     IDS_CLIPBOARD_UNLOCK_ERROR 
                             "There was an error unlocking the clipboard memory."

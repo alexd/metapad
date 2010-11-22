@@ -164,6 +164,7 @@ extern atoi(const char*);
 ///// Macros /////
 
 #define ERROROUT(_x) MessageBox(hwnd, _x, STR_METAPAD, MB_OK | MB_ICONEXCLAMATION)
+#define MSGOUT(_x) MessageBox(hwnd, _x, STR_METAPAD, MB_OK | MB_ICONINFORMATION)
 #define DBGOUT(_x, _y) MessageBox(hwnd, _x, _y, MB_OK | MB_ICONEXCLAMATION)
 
 ///// Typedefs /////
@@ -236,6 +237,7 @@ TCHAR FindArray[NUMFINDS][MAXFIND];
 TCHAR ReplaceArray[NUMFINDS][MAXFIND];
 int nEncodingType;
 BOOL g_bDisablePluginVersionChecking;
+BOOL g_bIniMode = FALSE;
 
 #ifdef USE_RICH_EDIT
 BOOL bUpdated, bHyperlinks;
@@ -2195,7 +2197,7 @@ void LoadOptions(void)
 	options.bSuppressUndoBufferPrompt = FALSE;
 #endif
 
-	if (lstrlen(szMetapadIni) == 0) {
+	if (!g_bIniMode) {
 		if (RegOpenKeyEx(HKEY_CURRENT_USER, STR_REGKEY, 0, KEY_ALL_ACCESS, &key) != ERROR_SUCCESS) {
 			ReportLastError();
 			return;
@@ -2403,7 +2405,7 @@ void SaveOptions(void)
 	HKEY key = NULL;
 	BOOL writeSucceeded = TRUE;
 
-	if (lstrlen(szMetapadIni) == 0) {
+	if (!g_bIniMode) {
 		RegCreateKeyEx(HKEY_CURRENT_USER, STR_REGKEY, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, NULL);
 	}
 
@@ -7117,7 +7119,7 @@ endinsertfile:
 				else {
 					HKEY key;
 
-					if (lstrlen(szMetapadIni) == 0) {
+					if (!g_bIniMode) {
 						RegCreateKeyEx(HKEY_CURRENT_USER, STR_REGKEY, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, NULL);
 						RegSetValueEx(key, _T("MacroArray"), 0, REG_BINARY, (LPBYTE)&options.MacroArray, sizeof(options.MacroArray));
 						RegCloseKey(key);
@@ -7554,6 +7556,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	szCmdLine = lpCmdLine;
 #endif
 
+	{
+		TCHAR* pch;
+		GetModuleFileName(hinstThis, szMetapadIni, MAXFN);
+			
+		pch = _tcsrchr(szMetapadIni, _T('\\'));
+		++pch;
+		*pch = '\0';
+		lstrcat(szMetapadIni, "metapad.ini");
+	}
+
 	if (lstrlen(szCmdLine) > 0) {
 		int nCmdLen = lstrlen(szCmdLine);
 		if (nCmdLen > 1 && szCmdLine[0] == '/') {
@@ -7569,18 +7581,29 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 				szCmdLine += 2;
 				if (szCmdLine[0] == ' ') ++szCmdLine;
 			}
+			else if (chOption == 'i') {
+				g_bIniMode = TRUE;
+				szCmdLine += 2;
+				if (szCmdLine[0] == ' ') ++szCmdLine;
+			}
+			else if (chOption == 'm') {
+				LoadOptions();
+				g_bIniMode = TRUE;
+				SaveOptions();
+				MSGOUT("Migration to INI completed.");
+				return FALSE;
+			}
 		}
 	}
 
-	// New INI mode
-	if (TRUE) {
-		TCHAR* pch;
-		GetModuleFileName(hinstThis, szMetapadIni, MAXFN);
-			
-		pch = _tcsrchr(szMetapadIni, _T('\\'));
-		++pch;
-		*pch = '\0';
-		lstrcat(szMetapadIni, "metapad.ini");
+	if (!g_bIniMode) {
+		WIN32_FIND_DATA FindFileData;
+		HANDLE handle;
+
+		if ((handle = FindFirstFile(szMetapadIni, &FindFileData)) != INVALID_HANDLE_VALUE) {
+			FindClose(handle);
+			g_bIniMode = TRUE;
+		}
 	}
 
 	GetCurrentDirectory(MAXFN, szDir);
