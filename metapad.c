@@ -30,8 +30,10 @@
 #undef UNICODE
 #endif
 
+/* Experiental/not working yet */
 //#define STREAMING
 //#define USE_BOOKMARKS
+//#define BUILD_METAPAD_UNICODE
 
 #include <windows.h>
 #include <shellapi.h>
@@ -390,8 +392,6 @@ HINSTANCE LoadAndVerifyLanguagePlugin(LPCTSTR szPlugin)
 			TCHAR szVersionError[550];
 			wsprintf(szVersionError, GetString(IDS_PLUGIN_MISMATCH_ERROR), szVersionPlug, szVersionThis);
 			ERROROUT(szVersionError);
-			FreeLibrary(hinstTemp);
-			return NULL;
 		}
 	}
 

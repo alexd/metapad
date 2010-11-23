@@ -936,7 +936,7 @@ END
 
 STRINGTABLE DISCARDABLE 
 BEGIN
-    IDS_VERSION_SYNCH       "3.5"
+    IDS_VERSION_SYNCH       "3.6"
     IDS_PLUGIN_LANGUAGE     "English (Plugin Template)"
     IDS_PLUGIN_RELEASE      "1"
     IDS_PLUGIN_TRANSLATOR   "Alex Davidson"
@@ -1068,7 +1068,7 @@ BEGIN
     IDS_BAD_STRING_PLUGIN_ERROR 
                             "Error fetching version string resource from plugin DLL. It is probably not a valid metapad language plugin."
     IDS_PLUGIN_MISMATCH_ERROR 
-                            "This language plugin is for metapad version %s, but you are running metapad version %s. Check the metapad website for language plugin updates."
+                            "Your language plugin is for metapad %s, but you are running metapad %s.\n\nSome menu or dialog features may be missing or not work correctly.\n\nRun metapad /v to skip this message."
     IDS_ALLRIGHTS           "All Rights Reserved"
     IDS_OK_BUTTON           "OK"
     IDS_DEFAULT_FILTER_TEXT "Text (*.*)|*.*"
