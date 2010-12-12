@@ -7,7 +7,7 @@ For details, see http://sourceforge.net/projects/libb64
 
 #include "cencode.h"
 
-const int CHARS_PER_LINE = 2000;
+const int CHARS_PER_LINE = 500;
 const char FILLER = '=';
 
 void base64_init_encodestate(base64_encodestate* state_in)

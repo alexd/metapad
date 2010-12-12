@@ -30,7 +30,7 @@
 #undef UNICODE
 #endif
 
-/* Experiental/not working yet */
+/* Experimental/not working yet */
 //#define STREAMING
 //#define USE_BOOKMARKS
 //#define BUILD_METAPAD_UNICODE
@@ -331,7 +331,7 @@ void ReportLastError(void);
 void LaunchPrimaryExternalViewer(void);
 void LaunchSecondaryExternalViewer(void);
 void LoadOptionString(HKEY hKey, LPCSTR name, BYTE* lpData, DWORD cbData);
-void LoadOptionNumeric(HKEY hKey, LPCSTR name, BYTE* lpData, DWORD cbData);
+BOOL LoadOptionNumeric(HKEY hKey, LPCSTR name, BYTE* lpData, DWORD cbData);
 void LoadOptionBinary(HKEY hKey, LPCSTR name, BYTE* lpData, DWORD cbData);
 void LoadOptions(void);
 void SaveOptions(void);
@@ -2188,7 +2188,6 @@ void LoadOptions(void)
 
 	if (!g_bIniMode) {
 		if (RegOpenKeyEx(HKEY_CURRENT_USER, STR_REGKEY, 0, KEY_ALL_ACCESS, &key) != ERROR_SUCCESS) {
-			ReportLastError();
 			return;
 		}
 	}
@@ -2316,15 +2315,23 @@ void LoadOptionString(HKEY hKey, LPCSTR name, BYTE* lpData, DWORD cbData)
 	}
 }
 
-void LoadOptionNumeric(HKEY hKey, LPCSTR name, BYTE* lpData, DWORD cbData)
+BOOL LoadOptionNumeric(HKEY hKey, LPCSTR name, BYTE* lpData, DWORD cbData)
 {
 	if (hKey) {
-		RegQueryValueEx(hKey, name, NULL, NULL, lpData, &cbData);
+		return (RegQueryValueEx(hKey, name, NULL, NULL, lpData, &cbData) == ERROR_SUCCESS);
 	}
 	else {
 		char val[10];
 		if (GetPrivateProfileString("Options", name, NULL, val, 10, szMetapadIni) > 0) {
-			*lpData = atoi(val);
+			long int longInt = atoi(val);
+			lpData[3] = (int)((longInt >> 24) & 0xFF) ;
+			lpData[2] = (int)((longInt >> 16) & 0xFF) ;
+			lpData[1] = (int)((longInt >> 8) & 0XFF);
+			lpData[0] = (int)((longInt & 0XFF));
+			return TRUE;
+		}
+		else {
+			return FALSE;
 		}
 	}
 }
@@ -2361,7 +2368,12 @@ BOOL SaveOption(HKEY hKey, LPCSTR name, DWORD dwType, CONST BYTE* lpData, DWORD 
 		switch (dwType) {
 			case REG_DWORD: {
 				char val[10];
-				wsprintf(val, "%d", (int)(*lpData));
+				int int32 = 0;
+				int32 = (int32 << 8) + lpData[3];
+				int32 = (int32 << 8) + lpData[2];
+				int32 = (int32 << 8) + lpData[1];
+				int32 = (int32 << 8) + lpData[0];
+				wsprintf(val, "%d", int32);
 				succeeded = WritePrivateProfileString("Options", name, val, szMetapadIni);
 				break;
 			}
@@ -2486,44 +2498,33 @@ void SaveOptions(void)
 
 void LoadWindowPlacement(int* left, int* top, int* width, int* height, int* nShow)
 {
-	HKEY key;
-	DWORD dwBufferSize;
-	ULONG nPrevSave;
-	BOOL bErrors = TRUE;
+	HKEY key = NULL;
+	DWORD dwBufferSize = sizeof(int);
+	BOOL bSuccess = TRUE;
 
-	if (RegCreateKeyEx(HKEY_CURRENT_USER, STR_REGKEY, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, &nPrevSave) != ERROR_SUCCESS)
-		ReportLastError();
-
-	if (nPrevSave == REG_OPENED_EXISTING_KEY) {
-		bErrors = FALSE;
-
-		dwBufferSize = sizeof(int);
-
-		if (RegQueryValueEx(key, _T("w_Left"), NULL, NULL, (LPBYTE)left, &dwBufferSize) != ERROR_SUCCESS)
-			bErrors = TRUE;
-
-		if (RegQueryValueEx(key, _T("w_Top"), NULL, NULL, (LPBYTE)top, &dwBufferSize) != ERROR_SUCCESS)
-			bErrors = TRUE;
-
-		if (RegQueryValueEx(key, _T("w_Width"), NULL, NULL, (LPBYTE)width, &dwBufferSize) != ERROR_SUCCESS)
-			bErrors = TRUE;
-
-		if (RegQueryValueEx(key, _T("w_Height"), NULL, NULL, (LPBYTE)height, &dwBufferSize) != ERROR_SUCCESS)
-			bErrors = TRUE;
-
-		if (RegQueryValueEx(key, _T("w_Window State"), NULL, NULL, (LPBYTE)nShow, &dwBufferSize) != ERROR_SUCCESS)
-			bErrors = TRUE;
-
-		if (bErrors)
-			ERROROUT(GetString(IDS_REGISTRY_WINDOW_ERROR));
+	if (!g_bIniMode) {
+		if (RegOpenKeyEx(HKEY_CURRENT_USER, STR_REGKEY, 0, KEY_ALL_ACCESS, &key) != ERROR_SUCCESS) {
+			bSuccess = FALSE;
+		}
 	}
 
-	if (bErrors) {
+	if (bSuccess) {
+		bSuccess &= LoadOptionNumeric(key, _T("w_Left"), (LPBYTE)left, dwBufferSize);
+		bSuccess &= LoadOptionNumeric(key, _T("w_Top"), (LPBYTE)top, dwBufferSize);
+		bSuccess &= LoadOptionNumeric(key, _T("w_Width"), (LPBYTE)width, dwBufferSize);
+		bSuccess &= LoadOptionNumeric(key, _T("w_Height"), (LPBYTE)height, dwBufferSize);
+		bSuccess &= LoadOptionNumeric(key, _T("w_WindowState"), (LPBYTE)nShow, dwBufferSize);
+	}
+
+	if (key != NULL) {
+		RegCloseKey(key);
+	}
+
+	if (!bSuccess) {
 		*left = *top = *width = *height = CW_USEDEFAULT;
 		*nShow = SW_SHOWNORMAL;
 		options.bStickyWindow = 0;
 	}
-	RegCloseKey(key);
 }
 
 void LoadMenusAndData(void)
@@ -2531,6 +2532,7 @@ void LoadMenusAndData(void)
 	HKEY key;
 	ULONG nPrevSave;
 
+	//TODOini - no need to create key here
 	if (RegCreateKeyEx(HKEY_CURRENT_USER, STR_REGKEY, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, &nPrevSave) != ERROR_SUCCESS)
 		ReportLastError();
 
@@ -2576,7 +2578,8 @@ void LoadMenusAndData(void)
 
 void SaveWindowPlacement(HWND hWndSave)
 {
-	HKEY key;
+	HKEY key = NULL;
+	BOOL writeSucceeded = TRUE;
 	RECT rect;
 	int left, top, width, height, max;
 	WINDOWPLACEMENT wndpl;
@@ -2601,24 +2604,28 @@ void SaveWindowPlacement(HWND hWndSave)
 	width = rect.right - left;
 	height = rect.bottom - top;
 
-	//TODOini
-
-	if (RegCreateKeyEx(HKEY_CURRENT_USER, STR_REGKEY, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, NULL) != ERROR_SUCCESS) {
-		ReportLastError();
-		return;
+	if (!g_bIniMode) {
+		if (RegCreateKeyEx(HKEY_CURRENT_USER, STR_REGKEY, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, NULL) != ERROR_SUCCESS) {
+			ReportLastError();
+			return;
+		}
 	}
-	RegSetValueEx(key, _T("w_Window State"), 0, REG_DWORD, (LPBYTE)&max, sizeof(int));
-	RegSetValueEx(key, _T("w_Left"), 0, REG_DWORD, (LPBYTE)&left, sizeof(int));
-	RegSetValueEx(key, _T("w_Top"), 0, REG_DWORD, (LPBYTE)&top, sizeof(int));
-	RegSetValueEx(key, _T("w_Width"), 0, REG_DWORD, (LPBYTE)&width, sizeof(int));
-	RegSetValueEx(key, _T("w_Height"), 0, REG_DWORD, (LPBYTE)&height, sizeof(int));
 
-	RegCloseKey(key);
+	SaveOption(key, _T("w_WindowState"), REG_DWORD, (LPBYTE)&max, sizeof(int));
+	SaveOption(key, _T("w_Left"), REG_DWORD, (LPBYTE)&left, sizeof(int));
+	SaveOption(key, _T("w_Top"), REG_DWORD, (LPBYTE)&top, sizeof(int));
+	SaveOption(key, _T("w_Width"), REG_DWORD, (LPBYTE)&width, sizeof(int));
+	SaveOption(key, _T("w_Height"), REG_DWORD, (LPBYTE)&height, sizeof(int));
+
+	if (key != NULL) {
+		RegCloseKey(key);
+	}
 }
 
 void SaveMenusAndData(void)
 {
-	HKEY key;
+	HKEY key = NULL;
+
 	//TODOini
 
 	if (RegCreateKeyEx(HKEY_CURRENT_USER, STR_REGKEY, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, NULL) != ERROR_SUCCESS) {
@@ -2782,6 +2789,7 @@ void PopulateMRUList(void)
 			EnableMenuItem(GetSubMenu(hmenu, 0), RECENTPOS, MF_BYPOSITION | MF_ENABLED);
 	}
 
+	//TODOini - need to create here? 
 	if (RegCreateKeyEx(HKEY_CURRENT_USER, STR_REGKEY, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, &nPrevSave) != ERROR_SUCCESS)
 		ReportLastError();
 
@@ -7594,7 +7602,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			g_bIniMode = TRUE;
 		}
 	}
-
 	GetCurrentDirectory(MAXFN, szDir);
 	LoadOptions();
 
