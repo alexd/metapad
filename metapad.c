@@ -2267,16 +2267,12 @@ void LoadOptions(void)
 			LoadOptionBinary(key, _T("MacroArray"), (LPBYTE)&options.MacroArray, dwBufferSize);
 		}
 		else {
-			LoadOptionString(key, _T("szMacroArray0"), (LPBYTE)&options.MacroArray[0], MAXMACRO); 
-			LoadOptionString(key, _T("szMacroArray1"), (LPBYTE)&options.MacroArray[1], MAXMACRO); 
-			LoadOptionString(key, _T("szMacroArray2"), (LPBYTE)&options.MacroArray[2], MAXMACRO); 
-			LoadOptionString(key, _T("szMacroArray3"), (LPBYTE)&options.MacroArray[3], MAXMACRO); 
-			LoadOptionString(key, _T("szMacroArray4"), (LPBYTE)&options.MacroArray[4], MAXMACRO); 
-			LoadOptionString(key, _T("szMacroArray5"), (LPBYTE)&options.MacroArray[5], MAXMACRO); 
-			LoadOptionString(key, _T("szMacroArray6"), (LPBYTE)&options.MacroArray[6], MAXMACRO); 
-			LoadOptionString(key, _T("szMacroArray7"), (LPBYTE)&options.MacroArray[7], MAXMACRO); 
-			LoadOptionString(key, _T("szMacroArray8"), (LPBYTE)&options.MacroArray[8], MAXMACRO); 
-			LoadOptionString(key, _T("szMacroArray9"), (LPBYTE)&options.MacroArray[9], MAXMACRO); 
+			char keyname[14];
+			int i;
+			for (i = 0; i < 10; ++i) {
+				wsprintf(keyname, "szMacroArray%d", i);
+				LoadOptionString(key, keyname, (LPBYTE)&options.MacroArray[i], MAXMACRO); 
+			}
 		}
 		
 		dwBufferSize = sizeof(COLORREF);
@@ -2470,16 +2466,12 @@ void SaveOptions(void)
 		writeSucceeded &= SaveOption(key, _T("MacroArray"), REG_BINARY, (LPBYTE)&options.MacroArray, sizeof(options.MacroArray));
 	}
 	else {
-		writeSucceeded &= SaveOption(key, _T("szMacroArray0"), REG_SZ, (LPBYTE)&options.MacroArray[0], MAXMACRO);
-		writeSucceeded &= SaveOption(key, _T("szMacroArray1"), REG_SZ, (LPBYTE)&options.MacroArray[1], MAXMACRO);
-		writeSucceeded &= SaveOption(key, _T("szMacroArray2"), REG_SZ, (LPBYTE)&options.MacroArray[2], MAXMACRO);
-		writeSucceeded &= SaveOption(key, _T("szMacroArray3"), REG_SZ, (LPBYTE)&options.MacroArray[3], MAXMACRO);
-		writeSucceeded &= SaveOption(key, _T("szMacroArray4"), REG_SZ, (LPBYTE)&options.MacroArray[4], MAXMACRO);
-		writeSucceeded &= SaveOption(key, _T("szMacroArray5"), REG_SZ, (LPBYTE)&options.MacroArray[5], MAXMACRO);
-		writeSucceeded &= SaveOption(key, _T("szMacroArray6"), REG_SZ, (LPBYTE)&options.MacroArray[6], MAXMACRO);
-		writeSucceeded &= SaveOption(key, _T("szMacroArray7"), REG_SZ, (LPBYTE)&options.MacroArray[7], MAXMACRO);
-		writeSucceeded &= SaveOption(key, _T("szMacroArray8"), REG_SZ, (LPBYTE)&options.MacroArray[8], MAXMACRO);
-		writeSucceeded &= SaveOption(key, _T("szMacroArray9"), REG_SZ, (LPBYTE)&options.MacroArray[9], MAXMACRO);
+		char keyname[14];
+		int i;
+		for (i = 0; i < 10; ++i) {
+			wsprintf(keyname, "szMacroArray%d", i);
+			writeSucceeded &= SaveOption(key, keyname, REG_SZ, (LPBYTE)&options.MacroArray[i], MAXMACRO);
+		}
 	}
 	writeSucceeded &= SaveOption(key, _T("BackColour"), REG_BINARY, (LPBYTE)&options.BackColour, sizeof(COLORREF));
 	writeSucceeded &= SaveOption(key, _T("FontColour"), REG_BINARY, (LPBYTE)&options.FontColour, sizeof(COLORREF));
@@ -2529,44 +2521,56 @@ void LoadWindowPlacement(int* left, int* top, int* width, int* height, int* nSho
 
 void LoadMenusAndData(void)
 {
-	HKEY key;
-	ULONG nPrevSave;
+	HKEY key = NULL;
+	BOOL bLoad = TRUE;
 
-	//TODOini - no need to create key here
-	if (RegCreateKeyEx(HKEY_CURRENT_USER, STR_REGKEY, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, &nPrevSave) != ERROR_SUCCESS)
-		ReportLastError();
-
-	if (nPrevSave == REG_OPENED_EXISTING_KEY) {
-
-		DWORD dwBufferSize = sizeof(BOOL);
-
-		if (options.bSaveMenuSettings) {
-			RegQueryValueEx(key, _T("m_Word Wrap"), NULL, NULL, (LPBYTE)&bWordWrap, &dwBufferSize);
-			RegQueryValueEx(key, _T("m_Primary Font"), NULL, NULL, (LPBYTE)&bPrimaryFont, &dwBufferSize);
-			RegQueryValueEx(key, _T("m_SmartSelect"), NULL, NULL, (LPBYTE)&bSmartSelect, &dwBufferSize);
-#ifdef USE_RICH_EDIT
-			RegQueryValueEx(key, _T("m_Hyperlinks"), NULL, NULL, (LPBYTE)&bHyperlinks, &dwBufferSize);
-#endif
-			RegQueryValueEx(key, _T("m_ShowStatus"), NULL, NULL, (LPBYTE)&bShowStatus, &dwBufferSize);
-			RegQueryValueEx(key, _T("m_ShowToolbar"), NULL, NULL, (LPBYTE)&bShowToolbar, &dwBufferSize);
-			RegQueryValueEx(key, _T("m_AlwaysOnTop"), NULL, NULL, (LPBYTE)&bAlwaysOnTop, &dwBufferSize);
-			RegQueryValueEx(key, _T("m_Transparent"), NULL, NULL, (LPBYTE)&bTransparent, &dwBufferSize);
-			RegQueryValueEx(key, _T("bCloseAfterFind"), NULL, NULL, (LPBYTE)&bCloseAfterFind, &dwBufferSize);
-			RegQueryValueEx(key, _T("bNoFindHidden"), NULL, NULL, (LPBYTE)&bNoFindHidden, &dwBufferSize);
+	if (!g_bIniMode) {
+		if (RegOpenKeyEx(HKEY_CURRENT_USER, STR_REGKEY, 0, KEY_ALL_ACCESS, &key) != ERROR_SUCCESS) {
+			bLoad = FALSE;
 		}
+	}
 
-		dwBufferSize = sizeof(szCustomFilter);
-		RegQueryValueEx(key, _T("FileFilter"), NULL, NULL, (LPBYTE)&szCustomFilter, &dwBufferSize);
+	if (bLoad) {
+		if (options.bSaveMenuSettings) {
+			LoadOptionNumeric(key, _T("m_WordWrap"), (LPBYTE)&bWordWrap, sizeof(BOOL));
+			LoadOptionNumeric(key, _T("m_PrimaryFont"), (LPBYTE)&bPrimaryFont, sizeof(BOOL));
+			LoadOptionNumeric(key, _T("m_SmartSelect"), (LPBYTE)&bSmartSelect, sizeof(BOOL));
+#ifdef USE_RICH_EDIT
+			LoadOptionNumeric(key, _T("m_Hyperlinks"), (LPBYTE)&bHyperlinks, sizeof(BOOL));
+#endif
+			LoadOptionNumeric(key, _T("m_ShowStatus"), (LPBYTE)&bShowStatus, sizeof(BOOL));
+			LoadOptionNumeric(key, _T("m_ShowToolbar"), (LPBYTE)&bShowToolbar, sizeof(BOOL));
+			LoadOptionNumeric(key, _T("m_AlwaysOnTop"), (LPBYTE)&bAlwaysOnTop, sizeof(BOOL));
+			LoadOptionNumeric(key, _T("m_Transparent"), (LPBYTE)&bTransparent, sizeof(BOOL));
+			LoadOptionNumeric(key, _T("bCloseAfterFind"), (LPBYTE)&bCloseAfterFind, sizeof(BOOL));
+			LoadOptionNumeric(key, _T("bNoFindHidden"), (LPBYTE)&bNoFindHidden, sizeof(BOOL));
+		}
+		LoadOptionString(key, _T("FileFilter"), (LPBYTE)&szCustomFilter, sizeof(szCustomFilter));
 		
 		if (!options.bNoSaveHistory) {
 #ifdef BUILD_METAPAD_UNICODE
 			dwBufferSize = sizeof(TCHAR) * NUMFINDS * MAXFIND;
 			RegQueryValueEx(key, _T("FindArray_U"), NULL, NULL, (LPBYTE)&FindArray, &dwBufferSize);
 			RegQueryValueEx(key, _T("ReplaceArray_U"), NULL, NULL, (LPBYTE)&ReplaceArray, &dwBufferSize);
+			ASSERT(FALSE);
 #else
-			dwBufferSize = sizeof(TCHAR) * NUMFINDS * MAXFIND;
-			RegQueryValueEx(key, _T("FindArray"), NULL, NULL, (LPBYTE)&FindArray, &dwBufferSize);
-			RegQueryValueEx(key, _T("ReplaceArray"), NULL, NULL, (LPBYTE)&ReplaceArray, &dwBufferSize);
+			if (key) {
+				LoadOptionString(key, _T("FindArray"), (LPBYTE)&FindArray, sizeof(FindArray));
+				LoadOptionString(key, _T("ReplaceArray"), (LPBYTE)&ReplaceArray, sizeof(ReplaceArray));
+			}
+			else {
+				char keyname[16];
+				int i;
+				for (i = 0; i < 10; ++i) {
+					wsprintf(keyname, "szFindArray%d", i);
+					LoadOptionString(key, keyname, (LPBYTE)&FindArray[i], MAXFIND);
+				}
+				for (i = 0; i < 10; ++i) {
+					wsprintf(keyname, "szReplaceArray%d", i);
+					LoadOptionString(key, keyname, (LPBYTE)&ReplaceArray[i], MAXFIND);
+				}
+			}
+
 #endif	
 		}
 	}
@@ -2626,38 +2630,55 @@ void SaveMenusAndData(void)
 {
 	HKEY key = NULL;
 
-	//TODOini
-
-	if (RegCreateKeyEx(HKEY_CURRENT_USER, STR_REGKEY, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, NULL) != ERROR_SUCCESS) {
-		ReportLastError();
-		return;
+	if (!g_bIniMode) {
+		if (RegCreateKeyEx(HKEY_CURRENT_USER, STR_REGKEY, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, NULL) != ERROR_SUCCESS) {
+			ReportLastError();
+			return;
+		}
 	}
 	if (options.bSaveMenuSettings) {
-		RegSetValueEx(key, _T("m_Word Wrap"), 0, REG_DWORD, (LPBYTE)&bWordWrap, sizeof(BOOL));
-		RegSetValueEx(key, _T("m_Primary Font"), 0, REG_DWORD, (LPBYTE)&bPrimaryFont, sizeof(BOOL));
-		RegSetValueEx(key, _T("m_SmartSelect"), 0, REG_DWORD, (LPBYTE)&bSmartSelect, sizeof(BOOL));
+		SaveOption(key, _T("m_WordWrap"), REG_DWORD, (LPBYTE)&bWordWrap, sizeof(BOOL));
+		SaveOption(key, _T("m_PrimaryFont"), REG_DWORD, (LPBYTE)&bPrimaryFont, sizeof(BOOL));
+		SaveOption(key, _T("m_SmartSelect"), REG_DWORD, (LPBYTE)&bSmartSelect, sizeof(BOOL));
 #ifdef USE_RICH_EDIT
-		RegSetValueEx(key, _T("m_Hyperlinks"), 0, REG_DWORD, (LPBYTE)&bHyperlinks, sizeof(BOOL));
+		SaveOption(key, _T("m_Hyperlinks"), REG_DWORD, (LPBYTE)&bHyperlinks, sizeof(BOOL));
 #endif
-		RegSetValueEx(key, _T("m_ShowStatus"), 0, REG_DWORD, (LPBYTE)&bShowStatus, sizeof(BOOL));
-		RegSetValueEx(key, _T("m_ShowToolbar"), 0, REG_DWORD, (LPBYTE)&bShowToolbar, sizeof(BOOL));
-		RegSetValueEx(key, _T("m_AlwaysOnTop"), 0, REG_DWORD, (LPBYTE)&bAlwaysOnTop, sizeof(BOOL));
-		RegSetValueEx(key, _T("m_Transparent"), 0, REG_DWORD, (LPBYTE)&bTransparent, sizeof(BOOL));
-		RegSetValueEx(key, _T("bCloseAfterFind"), 0, REG_DWORD, (LPBYTE)&bCloseAfterFind, sizeof(BOOL));
-		RegSetValueEx(key, _T("bNoFindHidden"), 0, REG_DWORD, (LPBYTE)&bNoFindHidden, sizeof(BOOL));
+		SaveOption(key, _T("m_ShowStatus"), REG_DWORD, (LPBYTE)&bShowStatus, sizeof(BOOL));
+		SaveOption(key, _T("m_ShowToolbar"), REG_DWORD, (LPBYTE)&bShowToolbar, sizeof(BOOL));
+		SaveOption(key, _T("m_AlwaysOnTop"), REG_DWORD, (LPBYTE)&bAlwaysOnTop, sizeof(BOOL));
+		SaveOption(key, _T("m_Transparent"), REG_DWORD, (LPBYTE)&bTransparent, sizeof(BOOL));
+		SaveOption(key, _T("bCloseAfterFind"), REG_DWORD, (LPBYTE)&bCloseAfterFind, sizeof(BOOL));
+		SaveOption(key, _T("bNoFindHidden"), REG_DWORD, (LPBYTE)&bNoFindHidden, sizeof(BOOL));
 	}
 	
 	if (!options.bNoSaveHistory) {
 #ifdef BUILD_METAPAD_UNICODE
-		RegSetValueEx(key, _T("FindArray_U"), 0, REG_BINARY, (LPBYTE)&FindArray, sizeof(TCHAR) * NUMFINDS * MAXFIND);
-		RegSetValueEx(key, _T("ReplaceArray_U"), 0, REG_BINARY, (LPBYTE)&ReplaceArray, sizeof(TCHAR) * NUMFINDS * MAXFIND);
+		SaveOption(key, _T("FindArray_U"), REG_BINARY, (LPBYTE)&FindArray, sizeof(TCHAR) * NUMFINDS * MAXFIND);
+		SaveOption(key, _T("ReplaceArray_U"), REG_BINARY, (LPBYTE)&ReplaceArray, sizeof(TCHAR) * NUMFINDS * MAXFIND);
+		ASSERT(0);
 #else
-		RegSetValueEx(key, _T("FindArray"), 0, REG_BINARY, (LPBYTE)&FindArray, sizeof(TCHAR) * NUMFINDS * MAXFIND);
-		RegSetValueEx(key, _T("ReplaceArray"), 0, REG_BINARY, (LPBYTE)&ReplaceArray, sizeof(TCHAR) * NUMFINDS * MAXFIND);
+		if (key) {
+			SaveOption(key, _T("FindArray"), REG_BINARY, (LPBYTE)&FindArray, sizeof(FindArray));
+			SaveOption(key, _T("ReplaceArray"), REG_BINARY, (LPBYTE)&ReplaceArray, sizeof(ReplaceArray));
+		}
+		else {
+			char keyname[16];
+			int i;
+			for (i = 0; i < 10; ++i) {
+				wsprintf(keyname, "szFindArray%d", i);
+				SaveOption(key, keyname, REG_SZ, (LPBYTE)&FindArray[i], MAXFIND);
+			}
+			for (i = 0; i < 10; ++i) {
+				wsprintf(keyname, "szReplaceArray%d", i);
+				SaveOption(key, keyname, REG_SZ, (LPBYTE)&ReplaceArray[i], MAXFIND);
+			}
+		}
 #endif
 	}
 
-	RegCloseKey(key);
+	if (key != NULL) {
+		RegCloseKey(key);
+	}
 }
 
 void SaveMRUInfo(LPCTSTR szFullPath)
