@@ -2,7 +2,7 @@
 /*                                                                          */
 /*   metapad 3.6                                                            */
 /*                                                                          */
-/*   Copyright (C) 1999-2010 Alexander Davidson                             */
+/*   Copyright (C) 1999-2011 Alexander Davidson                             */
 /*                                                                          */
 /*   This program is free software: you can redistribute it and/or modify   */
 /*   it under the terms of the GNU General Public License as published by   */
@@ -161,7 +161,7 @@ extern atoi(const char*);
 #define STR_URL _T("http://liquidninja.com/metapad")
 #define STR_REGKEY _T("SOFTWARE\\metapad")
 #define STR_FAV_APPNAME _T("Favourites")
-#define STR_COPYRIGHT _T("© 1999-2010 Alexander Davidson")
+#define STR_COPYRIGHT _T("© 1999-2011 Alexander Davidson")
 
 ///// Macros /////
 
@@ -640,8 +640,6 @@ void UpdateCaption(void)
 
 void LoadFileFromMenu(WORD wMenu, BOOL bMRU)
 {
-	HKEY key = NULL;
-	TCHAR szKey[6];
 	HMENU hmenu = GetMenu(hwnd);
 	HMENU hsub = NULL;
 	MENUITEMINFO mio;
@@ -649,16 +647,6 @@ void LoadFileFromMenu(WORD wMenu, BOOL bMRU)
 
 	if (!SaveIfDirty())
 		return;
-
-	if (bMRU) {
-
-		//TODOini
-
-		if (RegCreateKeyEx(HKEY_CURRENT_USER, STR_REGKEY, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, NULL) != ERROR_SUCCESS) {
-			ReportLastError();
-			return;
-		}
-	}
 
 	if (bMRU) {
 		if (options.bRecentOnOwn)
@@ -706,14 +694,7 @@ void LoadFileFromMenu(WORD wMenu, BOOL bMRU)
 		}
 		else {
 			MakeNewFile();
-			if (bMRU) {
-				RegSetValueEx(key, szKey, 0, REG_SZ, (LPBYTE)_T(""), 1);
-				PopulateMRUList();
-			}
 		}
-	}
-	if (bMRU) {
-		RegCloseKey(key);
 	}
 }
 
@@ -2683,7 +2664,7 @@ void SaveMenusAndData(void)
 
 void SaveMRUInfo(LPCTSTR szFullPath)
 {
-	HKEY key;
+	HKEY key = NULL;
 	TCHAR szKey[7];
 	TCHAR szBuffer[MAXFN];
 	TCHAR szTopVal[MAXFN];
@@ -2693,28 +2674,26 @@ void SaveMRUInfo(LPCTSTR szFullPath)
 	if (options.nMaxMRU == 0)
 		return;	
 
-	//TODOini
-
-	if (RegCreateKeyEx(HKEY_CURRENT_USER, STR_REGKEY, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, NULL) != ERROR_SUCCESS) {
+	if (!g_bIniMode && RegCreateKeyEx(HKEY_CURRENT_USER, STR_REGKEY, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, NULL) != ERROR_SUCCESS) {
 		ReportLastError();
 		return;
 	}
 
 	wsprintf(szKey, _T("mru_%d"), nMRUTop);
 	dwBufferSize = sizeof(szBuffer);
-	RegQueryValueEx(key, szKey, NULL, NULL, (LPBYTE)(&szBuffer), &dwBufferSize);
+	LoadOptionNumeric(key, szKey, (LPBYTE)(&szBuffer), dwBufferSize);
 	
 	if (lstrcmp(szFullPath, szBuffer) != 0) {
 		if (++nMRUTop > options.nMaxMRU) {
 			nMRUTop = 1;
 		}
 
-		RegSetValueEx(key, _T("mru_Top"), 0, REG_DWORD, (LPBYTE)&nMRUTop, sizeof(int));
+		SaveOption(key, _T("mru_Top"), REG_DWORD, (LPBYTE)&nMRUTop, sizeof(int));
 		wsprintf(szKey, _T("mru_%d"), nMRUTop);
 		dwBufferSize = sizeof(szTopVal);
 		szTopVal[0] = '\0';
-		RegQueryValueEx(key, szKey, NULL, NULL, (LPBYTE)&szTopVal, &dwBufferSize);
-		RegSetValueEx(key, szKey, 0, REG_SZ, (LPBYTE)szFullPath, sizeof(TCHAR) * lstrlen(szFullPath) + 1);
+		LoadOptionString(key, szKey, (LPBYTE)&szTopVal, dwBufferSize);
+		SaveOption(key, szKey, REG_SZ, (LPBYTE)szFullPath, sizeof(TCHAR) * lstrlen(szFullPath) + 1);
 
 		for (i = 1; i <= options.nMaxMRU; ++i) {
 			if (i == nMRUTop) continue;
@@ -2722,15 +2701,17 @@ void SaveMRUInfo(LPCTSTR szFullPath)
 			szBuffer[0] = szKey[0] = '\0';
 			dwBufferSize = sizeof(szBuffer);
 			wsprintf(szKey, _T("mru_%d"), i);
-			RegQueryValueEx(key, szKey, NULL, NULL, (LPBYTE)&szBuffer, &dwBufferSize);
+			LoadOptionString(key, szKey, (LPBYTE)&szBuffer, dwBufferSize);
 			if (lstrcmpi(szBuffer, szFullPath) == 0) {
-				RegSetValueEx(key, szKey, 0, REG_SZ, (LPBYTE)szTopVal, sizeof(TCHAR) * lstrlen(szTopVal) + 1);
+				SaveOption(key, szKey, REG_SZ, (LPBYTE)szTopVal, sizeof(TCHAR) * lstrlen(szTopVal) + 1);
 				break;
 			}
 		}
 	}
 
-	RegCloseKey(key);
+	if (key != NULL) {
+		RegCloseKey(key);
+	}
 
 	PopulateMRUList();
 }
@@ -2782,7 +2763,7 @@ void PopulateFavourites(void)
 
 void PopulateMRUList(void)
 {
-	HKEY key;
+	HKEY key = NULL;
 	DWORD nPrevSave = 0;
 	TCHAR szBuffer[MAXFN+4];
 	TCHAR szBuff2[MAXFN];
@@ -2810,11 +2791,10 @@ void PopulateMRUList(void)
 			EnableMenuItem(GetSubMenu(hmenu, 0), RECENTPOS, MF_BYPOSITION | MF_ENABLED);
 	}
 
-	//TODOini - need to create here? 
-	if (RegCreateKeyEx(HKEY_CURRENT_USER, STR_REGKEY, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, &nPrevSave) != ERROR_SUCCESS)
+	if (!g_bIniMode && RegCreateKeyEx(HKEY_CURRENT_USER, STR_REGKEY, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, &nPrevSave) != ERROR_SUCCESS)
 		ReportLastError();
 
-	if (nPrevSave == REG_OPENED_EXISTING_KEY) {
+	if (g_bIniMode || nPrevSave == REG_OPENED_EXISTING_KEY) {
 		UINT i, num = 1, cnt = 0;
 		DWORD dwBufferSize = sizeof(int);
 		
@@ -2822,7 +2802,7 @@ void PopulateMRUList(void)
 			DeleteMenu(hsub, 0, MF_BYPOSITION);
 		}
 
-		RegQueryValueEx(key, _T("mru_Top"), NULL, NULL, (LPBYTE)&nMRUTop, &dwBufferSize);
+		LoadOptionNumeric(key, _T("mru_Top"), (LPBYTE)&nMRUTop, dwBufferSize);
 		mio.cbSize = sizeof(MENUITEMINFO);
 		mio.fMask = MIIM_TYPE | MIIM_ID;
 		mio.fType = MFT_STRING;
@@ -2834,7 +2814,7 @@ void PopulateMRUList(void)
 			wsprintf(szBuffer, (num < 10 ? _T("&%d ") : _T("%d ")), num);
 
 			dwBufferSize = sizeof(szBuff2);
-			RegQueryValueEx(key, szKey, NULL, NULL, (LPBYTE)(&szBuff2), &dwBufferSize);
+			LoadOptionString(key, szKey, (LPBYTE)(&szBuff2), dwBufferSize);
 
 			if (lstrlen(szBuff2) > 0) {
 				lstrcat(szBuffer, szBuff2);
@@ -2850,7 +2830,9 @@ void PopulateMRUList(void)
 			cnt++;
 		}
 	}
-	RegCloseKey(key);
+	if (key != NULL) {
+		RegCloseKey(key);
+	}
 }
 
 void CenterWindow(HWND hwndCenter)
@@ -4443,23 +4425,23 @@ BOOL CALLBACK AdvancedPageProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lP
 			break;
 		case IDC_BUTTON_CLEAR_RECENT:
 			if (MessageBox(hwndDlg, GetString(IDS_CLEAR_RECENT_WARNING), STR_METAPAD, MB_ICONEXCLAMATION | MB_OKCANCEL) == IDOK) {
-				HKEY key;
+				HKEY key = NULL;
 				TCHAR szKey[6];
 				UINT i;
 
-				//TODOini
-
-				if (RegCreateKeyEx(HKEY_CURRENT_USER, STR_REGKEY, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, NULL) != ERROR_SUCCESS) {
+				if (!g_bIniMode && RegCreateKeyEx(HKEY_CURRENT_USER, STR_REGKEY, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, NULL) != ERROR_SUCCESS) {
 					ReportLastError();
 					break;
 				}
 
 				for (i = 1; i <= options.nMaxMRU; ++i) {
 					wsprintf(szKey, _T("mru_%d"), i);
-					RegSetValueEx(key, szKey, 0, REG_SZ, (LPBYTE)_T(""), 1);
+					SaveOption(key, szKey, REG_SZ, (LPBYTE)_T(""), 1);
 				}
 
-				RegCloseKey(key);
+				if (key != NULL) {
+					RegCloseKey(key);
+				}
 
 				PopulateMRUList();
 			}
