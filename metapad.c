@@ -2114,11 +2114,12 @@ void LoadOptions(void)
 {
 	HKEY key = NULL;
 
-	options.nTabStops = 8;
+	options.nTabStops = 4;
 	options.rMargins.top = options.rMargins.bottom = options.rMargins.left = options.rMargins.right = 500;
 	options.nLaunchSave = options.nPrimaryFont = options.nSecondaryFont = 0;
 	options.bNoCaptionDir = options.bFindAutoWrap = options.bSaveWindowPlacement = options.bLaunchClose = options.bQuickExit = TRUE;
-	options.bAutoIndent = options.bInsertSpaces = FALSE;
+	options.bAutoIndent = TRUE;
+	options.bInsertSpaces = FALSE;
 	options.bSystemColours = TRUE;
 	options.bSystemColours2 = TRUE;
 	options.bSaveMenuSettings = TRUE;
