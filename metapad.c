@@ -143,9 +143,9 @@ extern atoi(const char*);
 #endif
 #else
 #ifdef USE_RICH_EDIT
-#define STR_ABOUT_NORMAL _T("metapad 3.6 beta 1")
+#define STR_ABOUT_NORMAL _T("metapad 3.6 beta 2")
 #else
-#define STR_ABOUT_NORMAL _T("metapad LE 3.6 beta 1")
+#define STR_ABOUT_NORMAL _T("metapad LE 3.6 beta 2")
 #endif
 #endif
 
@@ -7212,8 +7212,15 @@ endinsertfile:
 				break;
 			case ID_SHIFT_ENTER:
 #ifdef USE_RICH_EDIT
-				SendMessage(client, WM_KEYDOWN, (WPARAM)VK_RETURN, 0);
-				SendMessage(client, WM_KEYUP, (WPARAM)VK_RETURN, 0);
+			{
+				BYTE keys[256]; 
+				GetKeyboardState(keys); 
+				keys[VK_SHIFT] &= 0x7F; 
+				SetKeyboardState(keys); 
+				SendMessage(client, WM_KEYDOWN, (WPARAM)VK_RETURN, 0); 
+				keys[VK_SHIFT] |= 0x80; 
+				SetKeyboardState(keys); 
+			}
 #else
 				SendMessage(client, WM_CHAR, (WPARAM)'\r', 0);
 #endif
