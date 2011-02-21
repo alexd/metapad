@@ -450,6 +450,15 @@ BOOL EncodeWithEscapeSeqs(TCHAR* szText)
 			szStore[j++] = '\\';
 			szStore[j++] = 't';
 			break;
+		case ' ':
+			if (i == 0 || i == lstrlen(szText) - 1) {
+				szStore[j++] = '\\';
+				szStore[j++] = 's';
+			}
+			else {
+				szStore[j++] = ' ';
+			}
+			break;
 		case '\\':
 			szStore[j++] = '\\';
 			szStore[j++] = '\\';
@@ -485,6 +494,9 @@ void ParseForEscapeSeqs(TCHAR* szText)
 				break;
 			case 't':
 				szStore[j] = '\t';
+				break;
+			case 's':
+				szStore[j] = ' ';
 				break;
 			default:
 				szStore[j] = szText[i];
@@ -2242,7 +2254,7 @@ void LoadOptions(void)
 		dwBufferSize = sizeof(options.szArgs2);
 		LoadOptionString(key, _T("szArgs2"), (LPBYTE)&options.szArgs2, dwBufferSize);
 		dwBufferSize = sizeof(options.szQuote);
-		LoadOptionString(key, _T("szQuote"), (LPBYTE)&options.szQuote, dwBufferSize);
+		LoadOptionBinary(key, _T("szQuote"), (LPBYTE)&options.szQuote, dwBufferSize);
 
 		if (key != NULL) {
 			dwBufferSize = sizeof(options.MacroArray);
@@ -2441,7 +2453,7 @@ void SaveOptions(void)
 	writeSucceeded &= SaveOption(key, _T("szArgs"), REG_SZ, (LPBYTE)&options.szArgs, sizeof(options.szArgs));
 	writeSucceeded &= SaveOption(key, _T("szBrowser2"), REG_SZ, (LPBYTE)&options.szBrowser2, sizeof(options.szBrowser2));
 	writeSucceeded &= SaveOption(key, _T("szArgs2"), REG_SZ, (LPBYTE)&options.szArgs2, sizeof(options.szArgs2));
-	writeSucceeded &= SaveOption(key, _T("szQuote"), REG_SZ, (LPBYTE)&options.szQuote, sizeof(options.szQuote));
+	writeSucceeded &= SaveOption(key, _T("szQuote"), REG_BINARY, (LPBYTE)&options.szQuote, sizeof(options.szQuote));
 	writeSucceeded &= SaveOption(key, _T("szLangPlugin"), REG_SZ, (LPBYTE)&options.szLangPlugin, sizeof(options.szLangPlugin));
 	writeSucceeded &= SaveOption(key, _T("szFavDir"), REG_SZ, (LPBYTE)&options.szFavDir, sizeof(options.szFavDir));
 	if (key) {
