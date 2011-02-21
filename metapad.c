@@ -331,6 +331,7 @@ void ReportLastError(void);
 void LaunchPrimaryExternalViewer(void);
 void LaunchSecondaryExternalViewer(void);
 void LoadOptionString(HKEY hKey, LPCSTR name, BYTE* lpData, DWORD cbData);
+void LoadBoundedOptionString(HKEY hKey, LPCSTR name, BYTE* lpData, DWORD cbData);
 BOOL LoadOptionNumeric(HKEY hKey, LPCSTR name, BYTE* lpData, DWORD cbData);
 void LoadOptionBinary(HKEY hKey, LPCSTR name, BYTE* lpData, DWORD cbData);
 void LoadOptions(void);
@@ -450,15 +451,6 @@ BOOL EncodeWithEscapeSeqs(TCHAR* szText)
 			szStore[j++] = '\\';
 			szStore[j++] = 't';
 			break;
-		case ' ':
-			if (i == 0 || i == lstrlen(szText) - 1) {
-				szStore[j++] = '\\';
-				szStore[j++] = 's';
-			}
-			else {
-				szStore[j++] = ' ';
-			}
-			break;
 		case '\\':
 			szStore[j++] = '\\';
 			szStore[j++] = '\\';
@@ -494,9 +486,6 @@ void ParseForEscapeSeqs(TCHAR* szText)
 				break;
 			case 't':
 				szStore[j] = '\t';
-				break;
-			case 's':
-				szStore[j] = ' ';
 				break;
 			default:
 				szStore[j] = szText[i];
@@ -2263,9 +2252,10 @@ void LoadOptions(void)
 		else {
 			char keyname[14];
 			int i;
+	
 			for (i = 0; i < 10; ++i) {
 				wsprintf(keyname, "szMacroArray%d", i);
-				LoadOptionString(key, keyname, (LPBYTE)&options.MacroArray[i], MAXMACRO); 
+				LoadBoundedOptionString(key, keyname, (LPBYTE)&options.MacroArray[i], MAXMACRO);
 			}
 		}
 		
@@ -2302,6 +2292,23 @@ void LoadOptionString(HKEY hKey, LPCSTR name, BYTE* lpData, DWORD cbData)
 	}
 	else {
 		GetPrivateProfileString("Options", name, (char*)lpData, (char*)lpData, cbData, szMetapadIni);
+	}
+}
+
+void LoadBoundedOptionString(HKEY hKey, LPCSTR name, BYTE* lpData, DWORD cbData)
+{
+	if (hKey) {
+		RegQueryValueEx(hKey, name, NULL, NULL, lpData, &cbData);
+	}
+	else {
+		char *bounded = (LPTSTR)GlobalAlloc(GPTR, cbData + 2);
+		GetPrivateProfileString("Options", name, bounded, bounded, cbData + 2, szMetapadIni);
+		if (lstrlen(bounded) >= 2 && bounded[0] == '[' && bounded[lstrlen(bounded)-1] == ']') {
+			strncpy((char*)lpData, bounded+1, lstrlen(bounded) - 2);
+		}
+		else {
+			strncpy((char*)lpData, bounded, lstrlen(bounded));
+		}
 	}
 }
 
@@ -2462,9 +2469,11 @@ void SaveOptions(void)
 	else {
 		char keyname[14];
 		int i;
+		char bounded[MAXMACRO + 2];
 		for (i = 0; i < 10; ++i) {
 			wsprintf(keyname, "szMacroArray%d", i);
-			writeSucceeded &= SaveOption(key, keyname, REG_SZ, (LPBYTE)&options.MacroArray[i], MAXMACRO);
+			wsprintf(bounded, "[%s]", options.MacroArray[i]);
+			writeSucceeded &= SaveOption(key, keyname, REG_SZ, (LPBYTE)&bounded, MAXMACRO);
 		}
 	}
 	writeSucceeded &= SaveOption(key, _T("BackColour"), REG_BINARY, (LPBYTE)&options.BackColour, sizeof(COLORREF));
@@ -2557,11 +2566,11 @@ void LoadMenusAndData(void)
 				int i;
 				for (i = 0; i < 10; ++i) {
 					wsprintf(keyname, "szFindArray%d", i);
-					LoadOptionString(key, keyname, (LPBYTE)&FindArray[i], MAXFIND);
+					LoadBoundedOptionString(key, keyname, (LPBYTE)&FindArray[i], MAXFIND);
 				}
 				for (i = 0; i < 10; ++i) {
 					wsprintf(keyname, "szReplaceArray%d", i);
-					LoadOptionString(key, keyname, (LPBYTE)&ReplaceArray[i], MAXFIND);
+					LoadBoundedOptionString(key, keyname, (LPBYTE)&ReplaceArray[i], MAXFIND);
 				}
 			}
 
@@ -2657,14 +2666,17 @@ void SaveMenusAndData(void)
 		}
 		else {
 			char keyname[16];
+			char bounded[MAXFIND + 2];
 			int i;
 			for (i = 0; i < 10; ++i) {
 				wsprintf(keyname, "szFindArray%d", i);
-				SaveOption(key, keyname, REG_SZ, (LPBYTE)&FindArray[i], MAXFIND);
+				wsprintf(bounded, "[%s]", &FindArray[i]);
+				SaveOption(key, keyname, REG_SZ, (LPBYTE)bounded, MAXFIND);
 			}
 			for (i = 0; i < 10; ++i) {
 				wsprintf(keyname, "szReplaceArray%d", i);
-				SaveOption(key, keyname, REG_SZ, (LPBYTE)&ReplaceArray[i], MAXFIND);
+				wsprintf(bounded, "[%s]", &ReplaceArray[i]);
+				SaveOption(key, keyname, REG_SZ, (LPBYTE)bounded, MAXFIND);
 			}
 		}
 #endif
