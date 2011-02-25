@@ -372,7 +372,7 @@ LPTSTR GetString(UINT uID)
 HINSTANCE LoadAndVerifyLanguagePlugin(LPCTSTR szPlugin)
 {
 	HINSTANCE hinstTemp;
-
+	
 	hinstTemp = LoadLibrary(szPlugin);
 	if (hinstTemp == NULL) {
 		ERROROUT(GetString(IDS_INVALID_PLUGIN_ERROR));
@@ -7235,6 +7235,7 @@ endinsertfile:
 				}
 				break;
 			case ID_SHIFT_ENTER:
+			case ID_CONTROL_SHIFT_ENTER:
 #ifdef USE_RICH_EDIT
 			{
 				BYTE keys[256]; 

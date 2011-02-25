@@ -309,6 +309,7 @@
 #define ID_SCROLLRIGHT                  40107
 #define ID_SAVE_AND_QUIT                40108
 #define ID_UTF_8_FILE                   40109
+#define ID_CONTROL_SHIFT_ENTER          40110
 #define ID_MRU_BASE                     44000
 #define ID_MRU_1                        44001
 #define ID_MRU_2                        44002
