@@ -157,6 +157,7 @@
 #define IDC_CHECK_SAVEMENUSETTINGS      1038
 #define IDC_EDIT_ARGS                   1039
 #define IDC_EDIT_ARGS2                  1040
+#define IDC_CHECK_SAVEDIRECTORY         1041
 #define IDC_RECENT                      1042
 #define IDC_INSERT_TIME                 1043
 #define IDC_OFFSET_TEXT                 1043

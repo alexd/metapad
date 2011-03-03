@@ -143,9 +143,9 @@ extern atoi(const char*);
 #endif
 #else
 #ifdef USE_RICH_EDIT
-#define STR_ABOUT_NORMAL _T("metapad 3.6 beta 2")
+#define STR_ABOUT_NORMAL _T("metapad 3.6 beta 3")
 #else
-#define STR_ABOUT_NORMAL _T("metapad LE 3.6 beta 2")
+#define STR_ABOUT_NORMAL _T("metapad LE 3.6 beta 3")
 #endif
 #endif
 
@@ -260,6 +260,7 @@ typedef struct tag_options {
 	BOOL bQuickExit;
 	BOOL bSaveWindowPlacement;
 	BOOL bSaveMenuSettings;
+	BOOL bSaveDirectory;
 	BOOL bLaunchClose;
 	int nTabStops;
 	int nPrimaryFont;
@@ -2124,6 +2125,7 @@ void LoadOptions(void)
 	options.bSystemColours = TRUE;
 	options.bSystemColours2 = TRUE;
 	options.bSaveMenuSettings = TRUE;
+	options.bSaveDirectory = TRUE;
 	options.bNoSmartHome = FALSE;
 	options.bNoAutoSaveExt = FALSE;
 	options.bContextCursor = FALSE;
@@ -2208,6 +2210,7 @@ void LoadOptions(void)
 		LoadOptionNumeric(key, _T("bQuickExit"), (LPBYTE)&options.bQuickExit, dwBufferSize);
 		LoadOptionNumeric(key, _T("bSaveWindowPlacement"), (LPBYTE)&options.bSaveWindowPlacement, dwBufferSize);
 		LoadOptionNumeric(key, _T("bSaveMenuSettings"), (LPBYTE)&options.bSaveMenuSettings, dwBufferSize);
+		LoadOptionNumeric(key, _T("bSaveDirectory"), (LPBYTE)&options.bSaveDirectory, dwBufferSize);
 		LoadOptionNumeric(key, _T("bLaunchClose"), (LPBYTE)&options.bLaunchClose, dwBufferSize);
 		LoadOptionNumeric(key, _T("bNoFaves"), (LPBYTE)&options.bNoFaves, dwBufferSize);
 #ifndef USE_RICH_EDIT
@@ -2435,6 +2438,7 @@ void SaveOptions(void)
 	writeSucceeded &= SaveOption(key, _T("bQuickExit"), REG_DWORD, (LPBYTE)&options.bQuickExit, sizeof(BOOL));
 	writeSucceeded &= SaveOption(key, _T("bSaveWindowPlacement"), REG_DWORD, (LPBYTE)&options.bSaveWindowPlacement, sizeof(BOOL));
 	writeSucceeded &= SaveOption(key, _T("bSaveMenuSettings"), REG_DWORD, (LPBYTE)&options.bSaveMenuSettings, sizeof(BOOL));
+	writeSucceeded &= SaveOption(key, _T("bSaveDirectory"), REG_DWORD, (LPBYTE)&options.bSaveDirectory, sizeof(BOOL));
 	writeSucceeded &= SaveOption(key, _T("bLaunchClose"), REG_DWORD, (LPBYTE)&options.bLaunchClose, sizeof(BOOL));
 	writeSucceeded &= SaveOption(key, _T("bNoFaves"), REG_DWORD, (LPBYTE)&options.bNoFaves, sizeof(BOOL));
 #ifndef USE_RICH_EDIT
@@ -2573,8 +2577,11 @@ void LoadMenusAndData(void)
 					LoadBoundedOptionString(key, keyname, (LPBYTE)&ReplaceArray[i], MAXFIND);
 				}
 			}
-
 #endif	
+		}
+
+		if (options.bSaveDirectory) {
+			LoadOptionString(key, _T("szLastDirectory"), (LPBYTE)&szDir, sizeof(szDir));
 		}
 	}
 
@@ -2680,6 +2687,10 @@ void SaveMenusAndData(void)
 			}
 		}
 #endif
+	}
+
+	if (options.bSaveDirectory) {
+		SaveOption(key, _T("szLastDirectory"), REG_SZ, (LPBYTE)szDir, sizeof(TCHAR) * (lstrlen(szDir) + 1));
 	}
 
 	if (key != NULL) {
@@ -4974,7 +4985,7 @@ BOOL CALLBACK GeneralPageProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
 			SetDlgItemText(hwndDlg, IDC_EDIT_QUOTE, options.szQuote);
 			SendDlgItemMessage(hwndDlg, IDC_CHECK_QUICKEXIT, BM_SETCHECK, (WPARAM) options.bQuickExit, 0);
 			SendDlgItemMessage(hwndDlg, IDC_CHECK_SAVEWINDOWPLACEMENT, BM_SETCHECK, (WPARAM) options.bSaveWindowPlacement, 0);
-			SendDlgItemMessage(hwndDlg, IDC_CHECK_SAVEMENUSETTINGS, BM_SETCHECK, (WPARAM) options.bSaveMenuSettings, 0);
+			SendDlgItemMessage(hwndDlg, IDC_CHECK_SAVEDIRECTORY, BM_SETCHECK, (WPARAM) options.bSaveDirectory, 0);
 			SendDlgItemMessage(hwndDlg, IDC_CHECK_LAUNCH_CLOSE, BM_SETCHECK, (WPARAM) options.bLaunchClose, 0);
 			SendDlgItemMessage(hwndDlg, IDC_FIND_AUTO_WRAP, BM_SETCHECK, (WPARAM)options.bFindAutoWrap, 0);
 			SendDlgItemMessage(hwndDlg, IDC_AUTO_INDENT, BM_SETCHECK, (WPARAM)options.bAutoIndent, 0);
@@ -5039,6 +5050,7 @@ BOOL CALLBACK GeneralPageProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
 				options.bQuickExit = (BST_CHECKED == SendDlgItemMessage(hwndDlg, IDC_CHECK_QUICKEXIT, BM_GETCHECK, 0, 0));
 				options.bSaveWindowPlacement = (BST_CHECKED == SendDlgItemMessage(hwndDlg, IDC_CHECK_SAVEWINDOWPLACEMENT, BM_GETCHECK, 0, 0));
 				options.bSaveMenuSettings = (BST_CHECKED == SendDlgItemMessage(hwndDlg, IDC_CHECK_SAVEMENUSETTINGS, BM_GETCHECK, 0, 0));
+				options.bSaveDirectory = (BST_CHECKED == SendDlgItemMessage(hwndDlg, IDC_CHECK_SAVEDIRECTORY, BM_GETCHECK, 0, 0));
 			}
 			break;
 		}
