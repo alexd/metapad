@@ -7,8 +7,13 @@ Release builds (ensure linking dynamically with OS copy of msvcrt.dll):
 
 5) Install the Windows DDK
 6) Add DDK lib to front of Library Directories (e.g., C:\WinDDK\7600.16385.1\lib\Crt\i386;)
-7) Disable _ftol2_sse by adding "/QIfist" to Additional Options under C/C++ Command Line
-8) Allow Windows 2000 compatibility by adding the following to linker command line:
+7) Add msvcrt.lib to the linker additional dependencies
+8) Disable _ftol2_sse by adding "/QIfist" to Additional Options under C/C++ Command Line
+9) Disable buffer security check (/GS-)
+
+Further backwards compatibility:
+
+10) Allow Windows 2000 compatibility by adding the following to linker command line:
    /SUBSYSTEM:WINDOWS,5.00 /OSVERSION:5.00
-9) To allow Win98 compatibility, edit the binary with PETools or the like and change 
+11) To allow Win98 compatibility, edit the binary with PETools or the like and change 
    optional header "major subsystem version" from 05 to 04. Ick!
