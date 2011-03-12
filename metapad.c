@@ -143,9 +143,9 @@ extern atoi(const char*);
 #endif
 #else
 #ifdef USE_RICH_EDIT
-#define STR_ABOUT_NORMAL _T("metapad 3.6 beta 3")
+#define STR_ABOUT_NORMAL _T("metapad 3.6 beta 4")
 #else
-#define STR_ABOUT_NORMAL _T("metapad LE 3.6 beta 3")
+#define STR_ABOUT_NORMAL _T("metapad LE 3.6 beta 4")
 #endif
 #endif
 
@@ -4984,6 +4984,7 @@ BOOL CALLBACK GeneralPageProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
 			SetDlgItemText(hwndDlg, IDC_EDIT_ARGS2, options.szArgs2);
 			SetDlgItemText(hwndDlg, IDC_EDIT_QUOTE, options.szQuote);
 			SendDlgItemMessage(hwndDlg, IDC_CHECK_QUICKEXIT, BM_SETCHECK, (WPARAM) options.bQuickExit, 0);
+			SendDlgItemMessage(hwndDlg, IDC_CHECK_SAVEMENUSETTINGS, BM_SETCHECK, (WPARAM) options.bSaveMenuSettings, 0);
 			SendDlgItemMessage(hwndDlg, IDC_CHECK_SAVEWINDOWPLACEMENT, BM_SETCHECK, (WPARAM) options.bSaveWindowPlacement, 0);
 			SendDlgItemMessage(hwndDlg, IDC_CHECK_SAVEDIRECTORY, BM_SETCHECK, (WPARAM) options.bSaveDirectory, 0);
 			SendDlgItemMessage(hwndDlg, IDC_CHECK_LAUNCH_CLOSE, BM_SETCHECK, (WPARAM) options.bLaunchClose, 0);
@@ -6945,14 +6946,16 @@ endinsertfile:
 								}
 							}
 							else {
-								if (LOWORD(wParam) == ID_MAKE_TITLE 
-									|| szDest[i] == '.'
-									|| szDest[i] == '?'
-									|| szDest[i] == '!'
-									|| szDest[i] == '\r'
-									) {
+								if (LOWORD(wParam) == ID_MAKE_TITLE && szDest[i] != '\'') {
 									bNextUpper = TRUE;
 								}
+								else if (szDest[i] == '.'
+									|| szDest[i] == '?'
+									|| szDest[i] == '!'
+									|| szDest[i] == '\r') {
+									bNextUpper = TRUE;
+								}
+
 							}
 						}
 					}
