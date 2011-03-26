@@ -283,10 +283,11 @@ BEGIN
     CONTROL         "&Use system colours",IDC_SYSTEM_COLOURS,"Button",
                     BS_AUTOCHECKBOX | BS_NOTIFY | WS_TABSTOP,16,62,76,9
     LTEXT           "Window colour:",IDC_STAT_WIND,16,76,50,9
-    CONTROL         "window",IDC_COLOUR_BACK,"Button",BS_OWNERDRAW,74,75,25,
+    CONTROL         "window",IDC_COLOUR_BACK,"Button",BS_OWNERDRAW,74,75,26,
                     11,WS_EX_STATICEDGE
     LTEXT           "Font colour:",IDC_STAT_FONT,16,92,45,9
-    CONTROL         "font",IDC_COLOUR_FONT,"Button",BS_OWNERDRAW,74,91,26,11                    
+    CONTROL         "font",IDC_COLOUR_FONT,"Button",BS_OWNERDRAW,74,91,26,
+                    11,WS_EX_STATICEDGE                    
     GROUPBOX        "Secondary font",IDC_STATIC,117,7,101,102,WS_GROUP
     CONTROL         "ANSI fi&xed width",IDC_FONT_SECONDARY,"Button",
                     BS_AUTORADIOBUTTON | WS_GROUP,126,19,75,10
@@ -300,7 +301,7 @@ BEGIN
                     26,11,WS_EX_STATICEDGE
     LTEXT           "Font colour:",IDC_STAT_FONT2,126,92,45,9
     CONTROL         "font",IDC_COLOUR_FONT2,"Button",BS_OWNERDRAW,183,91,26,
-                    11
+                    11,WS_EX_STATICEDGE
     GROUPBOX        "Window",IDC_STATIC,7,113,211,47
     LTEXT           "&Selection margin width:",IDC_STATIC,15,128,82,16
     EDITTEXT        IDC_EDIT_SM_WIDTH,94,127,24,12,ES_CENTER | 
@@ -645,7 +646,7 @@ BEGIN
         MENUITEM SEPARATOR
         POPUP "&Launch"
         BEGIN
-            MENUITEM "New &Instance\tCtrl+I",       ID_NEW_INSTANCE
+            MENUITEM "New W&indow\tCtrl+I",       ID_NEW_INSTANCE
             MENUITEM SEPARATOR
             MENUITEM "&Primary Viewer\tCtrl+L",     ID_FILE_LAUNCHVIEWER
             MENUITEM "&Secondary Viewer\tCtrl+J",   ID_LAUNCH_SECONDARY_VIEWER
@@ -1077,6 +1078,7 @@ BEGIN
     IDS_DEFAULT_FILTER_TEXT "Text (*.*)|*.*"
     IDS_NEW_FILE            "new file"
     IDS_MACRO_LENGTH_ERROR  "Selection is larger than maximum quick buffer length."
+    IDS_NEW_INSTANCE        "New Window"
 END
 
 #endif    // English (U.S.) resources

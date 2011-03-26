@@ -110,6 +110,7 @@
 #define IDR_ACCELERATOR                 104
 #define ID_ABOUT_PLUGIN                 104
 #define IDS_MACRO_LENGTH_ERROR          104
+#define IDS_NEW_INSTANCE                105
 #define IDI_PAD                         109
 #define IDI_EYE                         110
 #define IDD_PROPPAGE_GENERAL            112

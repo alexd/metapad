@@ -143,9 +143,9 @@ extern atoi(const char*);
 #endif
 #else
 #ifdef USE_RICH_EDIT
-#define STR_ABOUT_NORMAL _T("metapad 3.6 beta 4")
+#define STR_ABOUT_NORMAL _T("metapad 3.6 beta 5")
 #else
-#define STR_ABOUT_NORMAL _T("metapad LE 3.6 beta 4")
+#define STR_ABOUT_NORMAL _T("metapad LE 3.6 beta 5")
 #endif
 #endif
 
@@ -953,6 +953,7 @@ void CreateToolbar(void)
 
 	TBBUTTON tbButtons [] = {
 		{0, 0, TBSTATE_ENABLED, TBSTYLE_SEP, 0L, 0},
+		//{CUSTOMBMPBASE+6, ID_NEW_INSTANCE, TBSTATE_ENABLED, TBSTYLE_BUTTON, 0L, 0},
 		{STD_FILENEW, ID_MYFILE_NEW, TBSTATE_ENABLED, TBSTYLE_BUTTON, 0L, 0},
 		{STD_FILEOPEN, ID_MYFILE_OPEN, TBSTATE_ENABLED, TBSTYLE_BUTTON, 0L, 0},
 		{STD_FILESAVE, ID_MYFILE_SAVE, TBSTATE_ENABLED, TBSTYLE_BUTTON, 0L, 0},
@@ -5299,6 +5300,11 @@ LONG WINAPI MainWndProc(HWND hwndMain, UINT Msg, WPARAM wParam, LPARAM lParam)
 			case TTN_NEEDTEXT: {
 				LPTOOLTIPTEXT lpttt = (LPTOOLTIPTEXT)lParam;
 				switch (lpttt->hdr.idFrom) {
+					/*
+					case ID_NEW_INSTANCE:
+						lpttt->lpszText = GetString(IDS_NEW_INSTANCE);
+						break;
+					*/
 					case ID_MYFILE_NEW:
 						lpttt->lpszText = GetString(IDS_TB_NEWFILE);
 						break;
