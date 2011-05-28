@@ -143,9 +143,9 @@ extern atoi(const char*);
 #endif
 #else
 #ifdef USE_RICH_EDIT
-#define STR_ABOUT_NORMAL _T("metapad 3.6 beta 5")
+#define STR_ABOUT_NORMAL _T("metapad 3.6")
 #else
-#define STR_ABOUT_NORMAL _T("metapad LE 3.6 beta 5")
+#define STR_ABOUT_NORMAL _T("metapad LE 3.6")
 #endif
 #endif
 
