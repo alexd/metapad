@@ -5166,6 +5166,7 @@ LONG WINAPI MainWndProc(HWND hwndMain, UINT Msg, WPARAM wParam, LPARAM lParam)
 			break;
 		}
 	case WM_SIZING:
+		InvalidateRect(client, NULL, FALSE); // ML: for decreasing window size, update scroll bar
 		break;
 	case WM_SIZE: {
 		if (client == NULL) break;
